@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import type { CrewId } from '../data/crew'
 import { CREW, CREW_BY_ID } from '../data/crew'
-import { BustSprite } from './PixelSprite'
+import { PixelSprite } from './PixelSprite'
 
 /** Adjacent seats alternate sides, so consecutive speakers trade corners. */
 const SIDE: Record<CrewId, 'left' | 'right'> = CREW.reduce(
@@ -21,10 +21,10 @@ interface TalkSceneProps {
 }
 
 /**
- * Final Fantasy style conversation window: portrait pane on the speaker's
- * side, name tab above the text box, typed line, blinking continue arrow.
- * When the speaker changes their portrait slides out and the new one slides
- * in from the opposite edge.
+ * Final Fantasy style conversation: a framed dialogue window sits at the bottom
+ * of the stage and the speaking character stands on its top edge, sliding in
+ * from one side of the screen while the previous speaker slides back out the
+ * other side.
  */
 export function TalkScene({ crew, text, typing, thinking, tone }: TalkSceneProps) {
   const side = SIDE[crew]
@@ -45,19 +45,21 @@ export function TalkScene({ crew, text, typing, thinking, tone }: TalkSceneProps
 
   return (
     <div className={`ff-scene ff-${side} ff-${tone}`} aria-live="polite">
-      <div className="ff-window">
-        <div className="ff-portrait">
-          {outgoing && (
-            <div className={`ff-portrait-body ff-out ff-out-${SIDE[outgoing]}`} aria-hidden="true">
-              <BustSprite crew={outgoing} />
-            </div>
-          )}
-          <div className={`ff-portrait-body ff-in ff-in-${side}`} aria-hidden="true">
-            <BustSprite crew={crew} />
+      <div className="ff-actors">
+        {outgoing && (
+          <div
+            className={`ff-actor ff-actor-${SIDE[outgoing]} ff-actor-out-${SIDE[outgoing]}`}
+            aria-hidden="true"
+          >
+            <PixelSprite crew={outgoing} />
           </div>
-          <span className="ff-scan" aria-hidden="true" />
+        )}
+        <div className={`ff-actor ff-actor-${side} ff-actor-in-${side}`} aria-hidden="true">
+          <PixelSprite crew={crew} />
         </div>
+      </div>
 
+      <div className="ff-window">
         <div className="ff-body" style={{ ['--accent' as string]: member.accent }}>
           <span className="ff-name">
             {member.name}

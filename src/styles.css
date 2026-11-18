@@ -2165,3 +2165,126 @@ kbd {
 .ff-thinking i:nth-child(3) {
   animation-delay: 0.3s;
 }
+
+/* ---------------- ff dialogue: flow layout, actor overlay ---------------- */
+
+.ff-scene {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+}
+
+.ff-actors {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.ff-actor {
+  position: absolute;
+  bottom: 0;
+  width: 17%;
+  max-width: 230px;
+  filter: drop-shadow(-6px 8px 0 rgba(0, 0, 0, 0.45));
+}
+
+.ff-actor svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  image-rendering: pixelated;
+}
+
+.ff-actor-left {
+  left: 0.5%;
+}
+
+.ff-actor-right {
+  right: 0.5%;
+  filter: drop-shadow(6px 8px 0 rgba(0, 0, 0, 0.45));
+}
+
+.ff-actor-in-left {
+  animation: ffActorInLeft 240ms steps(6, end) both;
+}
+
+.ff-actor-in-right {
+  animation: ffActorInRight 240ms steps(6, end) both;
+}
+
+.ff-actor-out-left {
+  animation: ffActorOutLeft 200ms steps(5, end) both;
+}
+
+.ff-actor-out-right {
+  animation: ffActorOutRight 200ms steps(5, end) both;
+}
+
+@keyframes ffActorInLeft {
+  from {
+    transform: translateX(-160%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes ffActorInRight {
+  from {
+    transform: translateX(160%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes ffActorOutLeft {
+  from {
+    transform: translateX(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateX(-160%);
+    opacity: 0;
+  }
+}
+
+@keyframes ffActorOutRight {
+  from {
+    transform: translateX(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateX(160%);
+    opacity: 0;
+  }
+}
+
+/* the window grows with its text instead of being sliced to a fixed height */
+.ff-window {
+  position: relative;
+  inset: auto;
+  flex: 0 0 auto;
+  height: auto;
+  width: 100%;
+  padding: 9px 10px 10px;
+}
+
+.ff-body {
+  overflow: visible;
+  padding: 12px 14px 14px;
+}
+
+.ff-text {
+  margin: 6px 26px 0 0;
+  font-size: clamp(14px, 1.3vw, 18px);
+  line-height: 1.4;
+}
+
+.ff-next {
+  bottom: 7px;
+}
