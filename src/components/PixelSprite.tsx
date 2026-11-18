@@ -11,6 +11,20 @@ export function SpriteRuns({ crew }: { crew: CrewId }) {
   )
 }
 
+export function BustSprite({ crew }: { crew: CrewId }) {
+  return (
+    <svg
+      viewBox="3 1 14 12"
+      preserveAspectRatio="xMidYMin meet"
+      shapeRendering="crispEdges"
+      className="bust-sprite"
+      aria-hidden="true"
+    >
+      <SpriteRuns crew={crew} />
+    </svg>
+  )
+}
+
 export function PixelSprite({
   crew,
   size = 48,

@@ -1,89 +1,122 @@
-import { CREW } from '../data/crew'
+import { CREW, STAGE_W } from '../data/crew'
 import type { CrewId } from '../data/crew'
-import { FIGURE_TOP } from '../data/crew'
 import { SpriteRuns } from './PixelSprite'
 
-const STRIPES = Array.from({ length: 15 }, (_, i) => i)
+const STRIPES = Array.from({ length: 23 }, (_, i) => i)
 
-export function Room({ activeCrew }: { activeCrew: CrewId | null }) {
+/** Vertical seats sit on a shallow arc so the row reads as a half-oval table. */
+const SEAT_TOP = 66
+function arcDrop(index: number) {
+  const half = (CREW.length - 1) / 2
+  const t = Math.abs((index - half) / half)
+  return 14 * Math.pow(t, 1.6)
+}
+
+/**
+ * The room is two SVG layers so the whiteboard can sit on the back wall:
+ * background (wall, decor, floor) beneath it, foreground (chairs, crew, table)
+ * above it, with the board's HTML surface z-indexed between them.
+ */
+export function RoomBack() {
   return (
-    <svg className="stage-svg" viewBox="0 0 360 220" shapeRendering="crispEdges" aria-hidden="true">
+    <svg
+      className="stage-svg stage-back"
+      viewBox={`0 0 ${STAGE_W} 220`}
+      shapeRendering="crispEdges"
+      aria-hidden="true"
+    >
       <defs>
         <radialGradient id="lampGlow" cx="50%" cy="0%" r="75%">
           <stop offset="0%" stopColor="#ffe6a8" stopOpacity="0.28" />
           <stop offset="100%" stopColor="#ffe6a8" stopOpacity="0" />
         </radialGradient>
         <linearGradient id="tableTop" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#ad764d" />
-          <stop offset="100%" stopColor="#8a5a3b" />
+          <stop offset="0%" stopColor="#b98458" />
+          <stop offset="55%" stopColor="#ad764d" />
+          <stop offset="100%" stopColor="#7d5033" />
+        </linearGradient>
+        <linearGradient id="tableEdge" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#6b4229" />
+          <stop offset="100%" stopColor="#4a2d1c" />
         </linearGradient>
       </defs>
 
       {/* wall */}
-      <rect x="0" y="0" width="360" height="151" fill="#223049" />
+      <rect x="0" y="0" width={STAGE_W} height="112" fill="#223049" />
       {STRIPES.map((i) => (
-        <rect key={i} x={i * 24 + 8} y="0" width="2" height="151" fill="#26354f" />
+        <rect key={i} x={i * 24 + 8} y="0" width="2" height="112" fill="#26354f" />
       ))}
-      <rect x="0" y="0" width="360" height="6" fill="#1a2439" />
-      <rect x="0" y="144" width="360" height="7" fill="#1a2439" />
-      <rect x="0" y="144" width="360" height="2" fill="#2e3d5c" />
+      <rect x="0" y="0" width={STAGE_W} height="6" fill="#1a2439" />
+      <rect x="0" y="105" width={STAGE_W} height="7" fill="#1a2439" />
+      <rect x="0" y="105" width={STAGE_W} height="2" fill="#2e3d5c" />
 
       {/* framed chart */}
       <g>
-        <rect x="22" y="26" width="54" height="42" fill="#0f1626" />
-        <rect x="25" y="29" width="48" height="36" fill="#182238" />
-        <rect x="29" y="46" width="7" height="15" fill="#3dd6c0" />
-        <rect x="39" y="40" width="7" height="21" fill="#f2b03d" />
-        <rect x="49" y="34" width="7" height="27" fill="#e4572e" />
-        <rect x="59" y="44" width="7" height="17" fill="#6b8fd6" />
-        <rect x="29" y="32" width="20" height="2" fill="#48577a" />
+        <rect x="26" y="18" width="46" height="32" fill="#0f1626" />
+        <rect x="29" y="21" width="40" height="26" fill="#182238" />
+        <rect x="33" y="34" width="5" height="11" fill="#3dd6c0" />
+        <rect x="41" y="30" width="5" height="15" fill="#f2b03d" />
+        <rect x="49" y="26" width="5" height="19" fill="#e4572e" />
+        <rect x="57" y="33" width="5" height="12" fill="#6b8fd6" />
+        <rect x="33" y="24" width="14" height="1" fill="#48577a" />
       </g>
 
       {/* wall clock */}
       <g>
-        <rect x="292" y="22" width="30" height="30" fill="#0f1626" />
-        <rect x="295" y="25" width="24" height="24" fill="#e8e3d2" />
-        <rect x="306" y="28" width="2" height="9" fill="#26354f" />
-        <rect x="307" y="36" width="7" height="2" fill="#26354f" />
-        <rect x="305" y="24" width="4" height="2" fill="#8b99b1" />
+        <rect x="474" y="16" width="24" height="24" fill="#0f1626" />
+        <rect x="477" y="19" width="18" height="18" fill="#e8e3d2" />
+        <rect x="485" y="21" width="2" height="7" fill="#26354f" />
+        <rect x="486" y="27" width="5" height="2" fill="#26354f" />
       </g>
 
       {/* pendant lamps */}
       <g>
-        <rect x="86" y="0" width="2" height="20" fill="#0e1420" />
-        <rect x="70" y="20" width="34" height="3" fill="#2d3a56" />
-        <rect x="73" y="23" width="28" height="6" fill="#3a4768" />
-        <rect x="79" y="29" width="16" height="3" fill="#f2b03d" />
-        <polygon points="79,32 95,32 128,151 46,151" fill="url(#lampGlow)" opacity="0.26" />
+        <rect x="196" y="0" width="2" height="14" fill="#0e1420" />
+        <rect x="182" y="14" width="30" height="3" fill="#2d3a56" />
+        <rect x="185" y="17" width="24" height="5" fill="#3a4768" />
+        <rect x="191" y="22" width="12" height="2" fill="#f2b03d" />
+        <polygon points="191,24 203,24 232,112 162,112" fill="url(#lampGlow)" opacity="0.26" />
 
-        <rect x="274" y="0" width="2" height="16" fill="#0e1420" />
-        <rect x="258" y="16" width="34" height="3" fill="#2d3a56" />
-        <rect x="261" y="19" width="28" height="6" fill="#3a4768" />
-        <rect x="267" y="25" width="16" height="3" fill="#f2b03d" />
-        <polygon points="267,28 283,28 314,151 236,151" fill="url(#lampGlow)" opacity="0.22" />
+        <rect x="340" y="0" width="2" height="11" fill="#0e1420" />
+        <rect x="326" y="11" width="30" height="3" fill="#2d3a56" />
+        <rect x="329" y="14" width="24" height="5" fill="#3a4768" />
+        <rect x="335" y="19" width="12" height="2" fill="#f2b03d" />
+        <polygon points="335,21 347,21 374,112 308,112" fill="url(#lampGlow)" opacity="0.22" />
       </g>
 
       {/* floor */}
-      <rect x="0" y="151" width="360" height="69" fill="#151c2b" />
-      {[160, 171, 183, 196, 210].map((y) => (
-        <rect key={y} x="0" y={y} width="360" height="1" fill="#1d2739" />
+      <rect x="0" y="112" width={STAGE_W} height="108" fill="#151c2b" />
+      {[124, 140, 158, 178, 200].map((y) => (
+        <rect key={y} x="0" y={y} width={STAGE_W} height="1" fill="#1d2739" />
       ))}
-      {[40, 120, 200, 280].map((x, i) => (
-        <rect key={x} x={x} y={162 + i * 12} width="34" height="1" fill="#1d2739" />
+      {[40, 160, 280, 400, 470].map((x) => (
+        <rect key={x} x={x} y="184" width="34" height="1" fill="#1d2739" />
       ))}
+    </svg>
+  )
+}
 
-      {/* chairs */}
-      {CREW.map((member) => {
+export function RoomFront({ activeCrew }: { activeCrew: CrewId | null }) {
+  return (
+    <svg
+      className="stage-svg stage-front"
+      viewBox={`0 0 ${STAGE_W} 220`}
+      shapeRendering="crispEdges"
+      aria-hidden="true"
+    >
+      {/* chairs, seated on the half-oval arc */}
+      {CREW.map((member, index) => {
         const active = activeCrew === member.id
+        const top = SEAT_TOP - 16 + arcDrop(index)
         return (
           <g key={`chair-${member.id}`}>
-            <rect x={member.seat - 22} y="75" width="44" height="59" fill="#0f1725" />
-            <rect x={member.seat - 21} y="76" width="42" height="57" fill="#253049" />
-            <rect x={member.seat - 21} y="76" width="42" height="4" fill="#33405e" />
-            <rect x={member.seat - 21} y="76" width="42" height="1" fill={active ? member.accent : '#3d4b6b'} />
-            <rect x={member.seat - 18} y="82" width="36" height="2" fill="#1b2437" />
-            <rect x={member.seat - 24} y="100" width="4" height="34" fill="#131a27" />
-            <rect x={member.seat + 20} y="100" width="4" height="34" fill="#131a27" />
+            <rect x={member.seat - 22} y={top} width="44" height="60" fill="#0f1725" />
+            <rect x={member.seat - 21} y={top + 1} width="42" height="58" fill="#253049" />
+            <rect x={member.seat - 21} y={top + 1} width="42" height="4" fill="#33405e" />
+            <rect x={member.seat - 21} y={top + 1} width="42" height="1" fill={active ? member.accent : '#3d4b6b'} />
+            <rect x={member.seat - 18} y={top + 7} width="36" height="2" fill="#1b2437" />
+            <rect x={member.seat - 24} y={top + 24} width="4" height="34" fill="#131a27" />
+            <rect x={member.seat + 20} y={top + 24} width="4" height="34" fill="#131a27" />
           </g>
         )
       })}
@@ -93,7 +126,7 @@ export function Room({ activeCrew }: { activeCrew: CrewId | null }) {
         <svg
           key={member.id}
           x={member.seat - member.scale / 2}
-          y={FIGURE_TOP}
+          y={SEAT_TOP + arcDrop(index)}
           width={member.scale}
           height={member.scale}
           viewBox="0 0 20 20"
@@ -105,41 +138,36 @@ export function Room({ activeCrew }: { activeCrew: CrewId | null }) {
         </svg>
       ))}
 
-      {/* table */}
+      {/* half-oval table, drawn over the crew so they sit behind it */}
       <g>
-        <polygon points="40,151 320,151 350,198 10,198" fill="url(#tableTop)" />
-        <polygon points="40,151 320,151 321,155 39,155" fill="#b98458" />
-        <rect x="10" y="196" width="340" height="4" fill="#6b4229" />
-        <rect x="10" y="200" width="340" height="12" fill="#5b3722" />
-        <rect x="12" y="200" width="336" height="2" fill="#77492d" />
-        <rect x="14" y="212" width="336" height="2" fill="#3f2416" />
-        <rect x="26" y="214" width="16" height="6" fill="#3f2416" />
-        <rect x="318" y="214" width="16" height="6" fill="#3f2416" />
+        <ellipse cx="268" cy="152" rx="252" ry="40" fill="url(#tableEdge)" />
+        <ellipse cx="268" cy="146" rx="252" ry="38" fill="url(#tableTop)" />
+        <ellipse cx="268" cy="140" rx="240" ry="30" fill="#b98458" opacity="0.55" />
+        <ellipse cx="268" cy="138" rx="228" ry="26" fill="none" stroke="#c48f60" strokeWidth="1" opacity="0.6" />
 
         {/* grain */}
-        <rect x="58" y="164" width="64" height="1" fill="#9a6742" />
-        <rect x="150" y="176" width="96" height="1" fill="#9a6742" />
-        <rect x="236" y="160" width="58" height="1" fill="#9a6742" />
-        <rect x="86" y="188" width="44" height="1" fill="#7d5133" />
-        <rect x="188" y="191" width="72" height="1" fill="#7d5133" />
-        <rect x="34" y="172" width="30" height="1" fill="#7d5133" />
+        <rect x="88" y="132" width="64" height="1" fill="#9a6742" />
+        <rect x="246" y="146" width="96" height="1" fill="#9a6742" />
+        <rect x="372" y="130" width="58" height="1" fill="#9a6742" />
+        <rect x="150" y="156" width="44" height="1" fill="#7d5133" />
+        <rect x="310" y="158" width="72" height="1" fill="#7d5133" />
 
         {/* mug */}
-        <rect x="124" y="168" width="10" height="8" fill="#e8e3d2" />
-        <rect x="124" y="168" width="10" height="2" fill="#b6b0a0" />
-        <rect x="134" y="170" width="3" height="4" fill="#e8e3d2" />
-        <rect x="127" y="170" width="4" height="2" fill="#5b3722" />
+        <rect x="150" y="128" width="9" height="7" fill="#e8e3d2" />
+        <rect x="150" y="128" width="9" height="2" fill="#b6b0a0" />
+        <rect x="159" y="130" width="3" height="3" fill="#e8e3d2" />
+        <rect x="153" y="130" width="3" height="2" fill="#5b3722" />
 
         {/* laptop */}
-        <rect x="172" y="170" width="22" height="2" fill="#2b3752" />
-        <rect x="174" y="172" width="18" height="10" fill="#1b2438" />
-        <rect x="176" y="174" width="14" height="6" fill="#3dd6c0" opacity="0.75" />
-        <rect x="175" y="183" width="16" height="1" fill="#4b5b7d" />
+        <rect x="250" y="140" width="22" height="2" fill="#2b3752" />
+        <rect x="252" y="142" width="18" height="9" fill="#1b2438" />
+        <rect x="254" y="144" width="14" height="5" fill="#3dd6c0" opacity="0.75" />
+        <rect x="253" y="152" width="16" height="1" fill="#4b5b7d" />
 
         {/* notebook */}
-        <rect x="232" y="176" width="14" height="10" fill="#2c3a57" />
-        <rect x="232" y="176" width="14" height="2" fill="#46577c" />
-        <rect x="230" y="174" width="2" height="14" fill="#d9c36a" />
+        <rect x="360" y="146" width="14" height="9" fill="#2c3a57" />
+        <rect x="360" y="146" width="14" height="2" fill="#46577c" />
+        <rect x="358" y="144" width="2" height="13" fill="#d9c36a" />
       </g>
     </svg>
   )

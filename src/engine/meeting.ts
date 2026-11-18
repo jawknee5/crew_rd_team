@@ -13,6 +13,12 @@ const THINK_MS = 620
 const CHAR_MS = 22
 const HOLD_MS = 1600
 
+/**
+ * Runs the twelve agents in app.py order: researcher → analyzer → madhatter → mac
+ * → engineer → qa → suggester → writer → catalyst → stack → equalizer → xortron.
+ * The writer holds the report until the last four have reported in, then Vera
+ * closes with the decision memo.
+ */
 export function buildMeeting(brief: Brief): Meeting {
   const rand = mulberry32(hashString(brief.clean))
   const kw = (i: number) => brief.keywords[i % brief.keywords.length] ?? 'the problem'
@@ -36,7 +42,7 @@ export function buildMeeting(brief: Brief): Meeting {
     text: pick(rand, [
       `On ${kw(0)} now. There's a forum thread from 2014 where somebody already failed at this — reading it first.`,
       `Three angles on ${kw(0)}: vendor docs, field notes, and whatever people complain about in public.`,
-      `Pulling everything I can find on ${kw(0)} and ${kw(1)}. Half of it is wrong; the useful half isn't labelled.`,
+      `Pulling everything I can find on ${kw(0)} and ${kw(1)}, surface and deep web. Half of it is wrong; the useful half isn't labelled.`,
     ]),
   })
   specs.push({
@@ -61,45 +67,45 @@ export function buildMeeting(brief: Brief): Meeting {
     ]),
   })
 
-  /* architect */
+  /* the mad hatter */
   specs.push({
     crew: 'ines',
-    phase: 'ARCHITECTURE',
+    phase: 'FRINGE',
     text: pick(rand, [
-      `Structure first. Four parts, one seam between normalize and decide. Everything else can be swapped later.`,
-      `On ${kw(0)}: the cheap structure is probably good enough. The elegant one is a trap with better lighting.`,
-      `Constraints before drawings — budget, materials, and how badly this can fail before anyone notices.`,
+      `Then I'm ignoring the constraint everyone just accepted. If ${kw(0)} is the roadblock, what adjacent field already solved it badly and cheaply?`,
+      `Everyone's begging permission from ${kw(1)}. I'm asking what happens if we simply don't. Nobody owns that rule.`,
+      `Taking the two flaws Vera marked and treating them as design inputs instead of objections. That's where it gets interesting.`,
     ]),
   })
   specs.push({
     crew: 'ines',
-    phase: 'ARCHITECTURE',
+    phase: 'FRINGE',
     deliver: 'ines',
     text: pick(rand, [
-      `Sketch is up: parts, seam, and the test that kills it early.`,
-      `Architecture's on the table. I drew the seams, not the decorations.`,
-      `That's the sketch — four boxes, one risky seam, and a way to take it apart.`,
+      `Fringe dossier's up. Four hypotheses, one of which is legally dubious and therefore my favourite.`,
+      `That's the fringe pass: cross-pollinated, half-impossible, and one idea is genuinely worth building.`,
+      `Dossier's in. Prototype one is Milo's problem now — I just proved it's theoretically possible.`,
     ]),
   })
 
   /* mac */
   specs.push({
     crew: 'chip',
-    phase: 'MAC OPS',
+    phase: 'HARDWARE',
     text: pick(rand, [
-      `The Mac mini is already watching the folder for ${kw(0)}. Two Shortcuts workers, polite rate limits, cached.`,
-      `I can drive the whole ${kw(0)} pull from a Shortcut and a shell script. Cost estimate: one coffee.`,
-      `If ${kw(0)} has a public endpoint the Mac pulls it nightly. If it doesn't, the Mac still pulls it.`,
+      `For ${kw(0)} I need three salvaged boards, one buck converter and a fan from a dead projector. Everything is already in the bin.`,
+      `The RPi in the drawer can drive this. GPIO's free, the case is a lunchbox, cost is a printed bracket.`,
+      `Reverse-engineering the old sensor first. If its protocol is public, this is a weekend. If not, it's a fortnight and a scope.`,
     ]),
   })
   specs.push({
     crew: 'chip',
-    phase: 'MAC OPS',
+    phase: 'HARDWARE',
     deliver: 'chip',
     text: pick(rand, [
-      `Manifest's on the table — menu bar trigger, logged, cheap enough to run twice.`,
-      `Automation manifest ready. Same inputs, same output, reruns from Spotlight without a terminal.`,
-      `Manifest is up. First full pass takes forty minutes. After that it's a diff every morning.`,
+      `Schematic's up: pinout, bill of materials, assembly order. Feasibility honest, no garbage parts.`,
+      `That's the build — GPIO map, power budget and the three parts I'd salvage first.`,
+      `Hardware plan's on the table. The hard part isn't the circuit, it's the connector nobody stocks.`,
     ]),
   })
 
@@ -108,9 +114,9 @@ export function buildMeeting(brief: Brief): Meeting {
     crew: 'milo',
     phase: 'BUILD',
     text: pick(rand, [
-      `Build sheet's taking shape. Modular, so we can rip out whichever piece turns out to be wrong.`,
-      `Writing it so a stranger can rerun it in six months. That's the actual bar.`,
-      `Ugly version first, then the version we show people. Always.`,
+      `Build sheet's taking shape. Five scripts: the fringe prototype, the optimal universal, then RPi, Android and macOS variants.`,
+      `Writing it deterministic and boring. Type hints, error paths, deployment guide. A stranger should rerun it in six months.`,
+      `Ugly version first, then the version we show people. Platform variants after the contract stops moving.`,
     ]),
   })
   specs.push({
@@ -118,8 +124,8 @@ export function buildMeeting(brief: Brief): Meeting {
     phase: 'BUILD',
     deliver: 'milo',
     text: pick(rand, [
-      `Sheet's up: architecture, pseudocode, and the order I'd actually build it in.`,
-      `Build sheet's in. Four pieces, one contract, zero heroics.`,
+      `Five scripts are up with a comparative analysis. Same contract, four platforms, zero heroics.`,
+      `Sheet's in. The fringe prototype works; it's just not sane. Rex, it's yours.`,
       `Done. If it can't run twice in a row without cleanup, it isn't done — so I wrote it that way.`,
     ]),
   })
@@ -139,7 +145,7 @@ export function buildMeeting(brief: Brief): Meeting {
     phase: 'QA',
     deliver: 'rex',
     text: pick(rand, [
-      `QA report's on the table. Failure modes, test pass, and my go/no-go conditions.`,
+      `QA report's up: error detection, security scan, complexity metrics and the auto-fixed versions.`,
       `Report's in. Read the go/no-go last — it's the part that costs money.`,
       `That's the QA pass. Two of these will happen; plan for them now, not later.`,
     ]),
@@ -150,9 +156,9 @@ export function buildMeeting(brief: Brief): Meeting {
     crew: 'nia',
     phase: 'IDEATION',
     text: pick(rand, [
-      `Sideways option: don't build ${kw(0)} — build the check that tells people theirs is broken. Smaller, stranger, easier to sell.`,
-      `What if this ships as a weekly report instead of a tool? Same data, no interface, one less thing to maintain.`,
-      `I have three alternatives, one of which is genuinely bad and I like it anyway. Look at all three.`,
+      `Suggestions only, I'm not building it. Sideways option: don't ship ${kw(0)} — ship the check that tells people theirs is broken.`,
+      `What if this arrives as a weekly report instead of a tool? Same data, no interface, one less thing to maintain.`,
+      `Three features that would make this the industry leader, one of which is genuinely bad and I like it anyway.`,
     ]),
   })
   specs.push({
@@ -160,28 +166,114 @@ export function buildMeeting(brief: Brief): Meeting {
     phase: 'IDEATION',
     deliver: 'nia',
     text: pick(rand, [
-      `Options deck is up. The obvious plan is in there too, so we can argue with it properly.`,
-      `Deck's in: three sideways options and the one-afternoon test that picks between them.`,
-      `That's the options deck. Option two is the one nobody in this room would have pitched.`,
+      `Options deck is up, competitive advantages included. The obvious plan is in there too, so we can argue with it properly.`,
+      `Deck's in: breakthrough features, conceptual implementation notes, and the one-afternoon test that picks between them.`,
+      `That's the deck. Option two is the one nobody in this room would have pitched.`,
     ]),
   })
 
-  /* writer */
+  /* writer holds the report */
   specs.push({
     crew: 'theo',
     phase: 'WRITING',
     text: pick(rand, [
-      `I'll write the version a stranger can act on. One page, no jargon, numbers where numbers belong.`,
-      `Give me twenty minutes. Everything above this line becomes the report; everything below it becomes an appendix.`,
-      `Writing it now. If a sentence doesn't change a decision, it's getting cut.`,
+      `I'll hold the report until the last four brief me. Compiling early just means writing it twice.`,
+      `Drafting the skeleton now. Summary first, evidence second, and prompts for every agent that touched it.`,
+      `I have everything up to the options deck. Waiting on marketing, stack, legal and Xortron before I commit a first paragraph.`,
     ]),
   })
+
+  /* the catalyst */
+  specs.push({
+    crew: 'catalyst',
+    phase: 'MARKETING',
+    text: pick(rand, [
+      `Nobody here has asked who actually buys this. Give me ten minutes and I'll know their desires, their insecurities and their search history.`,
+      `The ${kw(0)} pitch is currently written for engineers. That is a choice, and it is the wrong one.`,
+      `There's a micro-niche nobody is speaking to. Small enough to own, loud enough to matter. That's the hook.`,
+    ]),
+  })
+  specs.push({
+    crew: 'catalyst',
+    phase: 'MARKETING',
+    deliver: 'catalyst',
+    text: pick(rand, [
+      `Campaign brief's up: consumer profile, niche, creative direction, omni-channel plan, CRO notes.`,
+      `Brief's in. The hook is one sentence and it is not the sentence on the whiteboard.`,
+      `That's the campaign. We could sell this to people who don't have the problem yet.`,
+    ]),
+  })
+
+  /* stack-devel */
+  specs.push({
+    crew: 'stack',
+    phase: 'FULL-STACK',
+    text: pick(rand, [
+      `Architecture review: the current plan will work and it will not scale. I can fix that without adding a service.`,
+      `Stack's fine. The state management isn't. I'll take the ugly seam and make it the only seam.`,
+      `If ${kw(1)} has to be hot-swapped in six months, this design already fails. Give me an hour.`,
+    ]),
+  })
+  specs.push({
+    crew: 'stack',
+    phase: 'FULL-STACK',
+    deliver: 'stack',
+    text: pick(rand, [
+      `Build plan's up: architecture, stack, sandboxed implementation, CI/CD, deploy steps, security scan.`,
+      `Sheet's in. I corrected two decisions and justified both. You're welcome.`,
+      `That's the stack. Zero-latency where it matters, no cleverness where it doesn't.`,
+    ]),
+  })
+
+  /* the equalizer */
+  specs.push({
+    crew: 'equalizer',
+    phase: 'LEGAL',
+    text: pick(rand, [
+      `Before anyone ships ${kw(0)}: which jurisdiction, who signed what, and what's the paper trail? Intake first, strategy after.`,
+      `There's a procedural problem here nobody flagged. It's cheap to fix now and expensive to fix in front of a judge.`,
+      `I'm pulling statutes and case law on ${kw(0)} now. Two angles: overreach, and bad process.`,
+    ]),
+  })
+  specs.push({
+    crew: 'equalizer',
+    phase: 'LEGAL',
+    deliver: 'equalizer',
+    text: pick(rand, [
+      `Memo's up: procedural issues, citations, accountability records, and a draft you can file once counsel reviews it.`,
+      `Strategy's in. It's a draft until you approve it — and a licensed local attorney should still read it.`,
+      `That's the memo. Preserve the evidence, don't sign anything yet, and read the orders section twice.`,
+    ]),
+  })
+
+  /* xortron */
+  specs.push({
+    crew: 'xortron',
+    phase: 'XORTRON',
+    text: pick(rand, [
+      `I've run this across architecture, performance, security and feasibility. The interesting failure isn't technical — it's the assumption under ${kw(0)}.`,
+      `Three domains, one answer, and a trade-off nobody wants to say out loud. I'll say it.`,
+      `I can solve this four ways. Two are elegant, one is cheap, and one is the only one that survives contact with production.`,
+    ]),
+  })
+  specs.push({
+    crew: 'xortron',
+    phase: 'XORTRON',
+    deliver: 'xortron',
+    text: pick(rand, [
+      `Dossier's in: production-ready code, trade-off table, and three rotating session ideas for the next round.`,
+      `Solution's up. I suggest a GPU kernel sprint next; this room has the attention span for exactly one more deep dive.`,
+      `That's the solve. It works, it's honest about what it costs, and the wit is complimentary.`,
+    ]),
+  })
+
+  /* writer delivers last */
   specs.push({
     crew: 'theo',
     phase: 'WRITING',
     deliver: 'theo',
     text: pick(rand, [
-      `Report's up. Summary first, evidence second, next steps last, and nothing I couldn't defend.`,
+      `Report's up: summary, methodology, QA, code sections, legal caveats, next steps — plus optimised prompts per agent.`,
       `Draft's on the table. I deleted the first paragraph twice; it's better for it.`,
       `That's the written report. Read the next steps if you only have thirty seconds.`,
     ]),
@@ -195,13 +287,13 @@ export function buildMeeting(brief: Brief): Meeting {
   specs.push({
     crew: 'chip',
     phase: 'SYNTHESIS',
-    text: `Queued three jobs off that. The Mac will tell us which assumption breaks first.`,
+    text: `The salvaged rig will tell us which assumption breaks first. Cheaper than a meeting.`,
   })
 
   const closers = [
     `Decision memo's in. If you want it changed, hand it to whoever would argue hardest against it.`,
     `Memo's on the table. Pull any paper apart — revisions go to the agent who'd fight you on it.`,
-    `That's the pass. Papers are up. Click one, pick a reviewer, and make them defend it again.`,
+    `That's the pass. Twelve papers are up. Click one, pick a reviewer, and make them defend it again.`,
   ]
   specs.push({
     crew: 'vera',

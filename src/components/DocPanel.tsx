@@ -63,6 +63,26 @@ export function DocPanel({ paper, pending, onClose, onRequest }: DocPanelProps) 
             </div>
           </div>
 
+          <div className="doc-engine">
+            <div className="doc-engine-top">
+              <span className="doc-engine-tag">{member.engine}</span>
+              <span className="doc-engine-model">{member.model}</span>
+            </div>
+            <p className="doc-engine-goal">
+              <b>GOAL</b> {member.goal}
+            </p>
+            <p className="doc-engine-line">
+              <b>OUTPUT</b> {member.expectedOutput}
+            </p>
+            <p className="doc-engine-line">
+              <b>TASK</b> {member.task}
+            </p>
+            <details className="doc-engine-tools">
+              <summary>TOOLS · {member.tools.length}</summary>
+              <p>{member.tools.join(' · ')}</p>
+            </details>
+          </div>
+
           <div className="doc-rule" />
 
           {paper.sections.map((section, index) => (

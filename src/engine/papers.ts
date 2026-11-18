@@ -30,6 +30,13 @@ function researcherSections(brief: Brief, rand: () => number): PaperSection[] {
       ],
     },
     {
+      heading: 'DEEP-WEB PASS',
+      bullets: [
+        `Tor sweep on ${k1} surfaced one mirror and one dead index. The mirror is the only place the original table of results still exists.`,
+        `Unorthodox recon: the ${k2} mailing-list archive. Not indexed, not linked, and the most useful thing I found all week.`,
+      ],
+    },
+    {
       heading: 'BLIND SPOTS',
       bullets: [
         `Nobody has published what a failed ${k1} actually costs, so every estimate we make is optimistic.`,
@@ -64,6 +71,7 @@ function analyzerSections(brief: Brief, rand: () => number): PaperSection[] {
           `Three of the five claims in the dossier hold up under their own footnotes. The other two are borrowed confidence.`,
           `Two sources disagree about ${k1}, and the newer one is quoting the older one. That collapses the evidence for the nicer story.`,
         ]),
+        `Methodology check: two sources are self-reported, one is a vendor benchmark, and the only independent number is three years old.`,
       ],
     },
     {
@@ -76,42 +84,48 @@ function analyzerSections(brief: Brief, rand: () => number): PaperSection[] {
     {
       heading: 'NEXT 3 MOVES',
       bullets: [
-        `1. Sable locks the source list. 2. Ines draws the structure. 3. Rex writes the kill criteria before we get attached.`,
+        `1. Sable locks the source list. 2. Ines breaks the constraint. 3. Rex writes the kill criteria before we get attached.`,
       ],
     },
   ]
 }
 
-function architectSections(brief: Brief, rand: () => number): PaperSection[] {
+function fringeSections(brief: Brief, rand: () => number): PaperSection[] {
   const k1 = brief.keywords[0]
+  const k2 = brief.keywords[1] ?? 'the constraint'
   return [
     {
-      heading: 'CONSTRAINTS',
+      heading: 'THE CONSTRAINT EVERYONE ACCEPTED',
       bullets: [
-        `Materials already in the bin cover an ugly version of ${k1}. Anything custom is a two-week detour pretending to be a shopping trip.`,
+        `Vera marked two flaws. The room will treat them as objections. I am treating them as free design inputs.`,
+        `“${k2}” is only a limit because we agreed to it. Nobody has shown me the rule that says we must.`,
+      ],
+    },
+    {
+      heading: 'CROSS-POLLINATION',
+      bullets: [
+        `Borrowed from stage rigging: build the failure into the set so it holds weight and looks accidental. Same trick, different industry.`,
+        `Borrowed from ambulance dispatch: the cheapest version of ${k1} is a priority queue with a human at the end, not a model.`,
         pick(rand, [
-          `Budget assumption: embarrassingly small. That is a feature — it kills bad ideas early.`,
-          `No new vendors. If it needs a purchase order, it needs a better reason.`,
+          `Borrowed from seed libraries: give the thing away, keep the catalogue. The catalogue is the moat.`,
+          `Borrowed from salvage diving: the parts are already sunk, someone just has to be willing to go down.`,
         ]),
       ],
     },
     {
-      heading: 'SHAPE OF THE SYSTEM',
+      heading: 'FRINGE HYPOTHESES',
       bullets: [
-        `Four pieces, one contract between them: ingest → normalize → decide → publish. Each rerunnable on its own.`,
-        `The seam that matters is between normalize and decide. Everything else can be swapped later without a rewrite.`,
+        `H1 · ${k1} can be inferred from a side-channel we already collect. Cheap to test, embarrassing if true.`,
+        `H2 · The existing tool is wrong on purpose. Test it by asking who profits from the wrongness.`,
+        `H3 · Do the inverse: measure how often ${k1} fails and sell the warning instead of the fix.`,
       ],
     },
     {
-      heading: 'INTERFACES',
+      heading: 'TO PROTOTYPE FIRST',
       bullets: [
-        `Input: one record per item, with a source and a timestamp attached or it does not enter.`,
-        `Output: one decision per item, plus the reason. Reasons are what make this debuggable in six months.`,
+        `H2 becomes a one-page experiment for Milo. It costs a day, and if it lands we skip six weeks of architecture.`,
+        `Warning: H1 is theoretically possible and practically rude. Flag it to the Equalizer before anyone ships it.`,
       ],
-    },
-    {
-      heading: 'ROUGH BOM',
-      bullets: [`4× off-the-shelf modules · 1× printed bracket · 2m of cable · 1 roll of tape, structural.`],
     },
   ]
 }
@@ -120,38 +134,48 @@ function macSections(brief: Brief, rand: () => number): PaperSection[] {
   const k1 = brief.keywords[0]
   return [
     {
-      heading: 'MAC RIG',
+      heading: 'SALVAGE LIST',
       bullets: [
-        `Two Shortcuts workers on the Mac mini, polite rate limits, one dedupe pass, one daily diff. Nothing exotic.`,
+        `RPi 3 in the drawer, buck converter from a dead router, a fan out of the projector, one lunchbox. Everything already owned.`,
         pick(rand, [
-          `The whole run is a shell script behind a Shortcut, so it can be kicked off from the menu bar without opening a terminal.`,
-          `Everything caches to disk so the run can repeat without annoying anyone upstream.`,
+          `The sensor is the only thing worth buying, and only if the old one in the parts bin is a different protocol.`,
+          `No new vendors. If it needs a purchase order, it needs a better reason.`,
         ]),
       ],
     },
     {
-      heading: 'AUTOMATION PLAN',
+      heading: 'GPIO PINOUT',
       bullets: [
-        `01 · harvest every public ${k1} source → normalize → dedupe`,
-        `02 · tag by ${brief.keywords[1] ?? 'relevance'} and confidence`,
-        `03 · publish a diff each morning; humans only read what changed`,
+        `GPIO4 · sensor clock (pull-up 10k) · GPIO17 · sensor data · GPIO27 · status LED · GPIO22 · relay enable`,
+        `3V3 to sensor VCC, common ground to the rail. Relay on a separate 5V feed — do not run it off the Pi's regulator.`,
       ],
     },
     {
-      heading: 'SCHEDULE',
+      heading: 'CIRCUIT',
+      code: `salvaged sensor ── 3V3
+               ├── GND ── common rail
+               ├── CLK ── GPIO4  (10k pull-up)
+               └── DAT ── GPIO17
+
+relay enable ── GPIO22 ── 1k ── NPN base
+relay coil  ── 5V rail, flyback diode across coil
+Pi regulator: NOT used for the relay. Ever.`,
+    },
+    {
+      heading: 'FEASIBILITY',
       bullets: [
+        `Honest read: the electronics are a weekend. The enclosure is two weekends and one regretted drill bit.`,
+        `Reverse engineering the sensor protocol is the real risk. If it's proprietary, budget a fortnight and a logic analyser.`,
         pick(rand, [
-          `First full pass: ~40 minutes. Incremental: under two. Cost: one coffee.`,
-          `Overnight batch fits comfortably in the cheap tier. Reruns are free after the first pass.`,
+          `Assembly order: power rail → sensor → relay → enclosure. Test each stage before the next, or debug all four at once.`,
+          `This will look like a bomb to anyone who doesn't know what it is. Label it.`,
         ]),
-        `If a source starts failing, the job degrades to last-known-good instead of dropping the section.`,
       ],
     },
     {
       heading: 'WHAT I DID NOT CHECK',
       bullets: [
-        `Robots rules on two of the sources. I flagged them; someone should glance before we lean on them.`,
-        `Whether ${k1} data is stable day to day. The diff will answer that by Thursday.`,
+        `Whether that sensor still works. It has been in the bin for two years and I refuse to be optimistic about it.`,
       ],
     },
   ]
@@ -162,38 +186,76 @@ function engineerSections(brief: Brief): PaperSection[] {
   const k2 = brief.keywords[1] ?? 'confidence'
   return [
     {
-      heading: 'ARCHITECTURE',
+      heading: 'CONTRACT',
       bullets: [
-        `Four small pieces with one contract between them: collect → normalize → decide → output.`,
-        `Every piece rerunnable on its own. No shared state, no heroics.`,
+        `One interface: collect → normalize → decide → emit. Every script below honours it, so the fringe version and the sane version are swappable.`,
+        `No shared state, no daemons, no heroics. Each script runs standalone and exits with a real status code.`,
       ],
     },
     {
-      heading: 'PSEUDOCODE',
-      code: `for source in sources("${k1}"):
-    doc = polite_fetch(source, cache=True)
-    yield normalize(doc, schema="v1")
+      heading: 'SCRIPT 1 · FRINGE PROTOTYPE',
+      code: `#!/usr/bin/env python3
+# from Ines' fringe dossier H2 — proof of concept only
+from dataclasses import dataclass
 
-def decide(items):
-    ranked = rank(items, by="${k2}", recency=True)
-    if confidence(ranked) < 0.6:
-        return human_review(ranked)
-    return ranked[0]`,
+@dataclass(frozen=True)
+class Hit:
+    source: str
+    score: float
+    raw: dict
+
+def infer(items: list[dict]) -> list[Hit]:
+    """side-channel inference: assumes the gap itself is the signal"""
+    gaps = [i for i in items if not i.get("${k2}")]
+    return [Hit("gap", len(gaps) / max(1, len(items)), i) for i in gaps[:5]]`,
     },
     {
-      heading: 'SHIP PLAN',
+      heading: 'SCRIPT 2 · OPTIMAL UNIVERSAL',
+      code: `#!/usr/bin/env python3
+"""contract-complete, platform-neutral"""
+import sys, json
+
+def collect(path: str) -> list[dict]:
+    with open(path) as fh:
+        return [json.loads(line) for line in fh if line.strip()]
+
+def normalize(doc: dict) -> dict | None:
+    if not doc.get("id") or not doc.get("${k2}"):
+        return None
+    return {"id": str(doc["id"]), "value": float(doc["${k2}"])}
+
+def decide(items: list[dict]) -> dict:
+    ranked = sorted(items, key=lambda d: d["value"], reverse=True)
+    return {"pick": ranked[0] if ranked else None, "n": len(ranked)}
+
+if __name__ == "__main__":
+    rows = [r for r in map(normalize, collect(sys.argv[1])) if r]
+    print(json.dumps(decide(rows)))
+    sys.exit(0 if rows else 2)`,
+    },
+    {
+      heading: 'SCRIPT 3–5 · PLATFORM VARIANTS',
       bullets: [
-        `Day 1: ugly end-to-end. Day 2: the error paths nobody enjoys. Day 3: the thing we show people.`,
+        `RPi · same contract, systemd unit, GPIO status LED on run, logrotate off a tmpfs mount.`,
+        `Android · Termux-compatible shell wrapper, no systemd, wake-lock held only for the collect phase.`,
+        `macOS · launchd plist with a ThrottleInterval, Xcode command-line tools only, logs into ~/Library/Logs.`,
+      ],
+    },
+    {
+      heading: 'COMPARATIVE ANALYSIS',
+      bullets: [
+        `Universal is the shipping default. Fringe is 40% cheaper to run and 100% harder to defend in a review.`,
         pick(mulberry32(hashString(brief.clean + 'milo')), [
-          `If it can't run twice in a row without manual cleanup, it isn't done.`,
-          `Boring dependencies only. The clever library is the one that breaks during the demo.`,
+          `RPi wins on cost, Android wins on reach, macOS wins on nobody having to ask IT for anything.`,
+          `Pick the platform by who has to maintain it, not by which benchmark looks nicer.`,
         ]),
       ],
     },
     {
-      heading: 'HANDOFF',
+      heading: 'DEPLOYMENT',
       bullets: [
         `README written for the person who inherits this and does not like me. Assumptions listed at the top.`,
+        `Day 1: ugly end-to-end. Day 2: the error paths nobody enjoys. Day 3: the thing we show people.`,
       ],
     },
   ]
@@ -215,11 +277,22 @@ function qaSections(brief: Brief, rand: () => number): PaperSection[] {
       ],
     },
     {
-      heading: 'TEST PASS',
+      heading: 'STATIC + DYNAMIC PASS',
       bullets: [
+        `Linter clean, type check clean. One dead branch on the RPi variant, two unbounded reads in the Android wrapper.`,
         `Hostile input first: empty, doubled, encoded wrong, and one field that is a novel instead of a number.`,
         `Then the boring test nobody runs: kill it mid-run and start it again. It should not care.`,
-        `Pass criteria are written before the test, not after the results.`,
+      ],
+    },
+    {
+      heading: 'SECURITY + COMPLEXITY',
+      bullets: [
+        `Security scan: no secrets in source, no eval, one unvalidated path argument in the universal script — patched.`,
+        `Cyclomatic complexity peaks at 7 in decide(). Acceptable, but it will be 12 by the third feature.`,
+        pick(rand, [
+          `Auto-fix branch exists and is tested; it changes two lines and nothing else. Diff before you merge it.`,
+          `Auto-fixed version is in the same dossier. It is a proposal, not a replacement.`,
+        ]),
       ],
     },
     {
@@ -227,6 +300,7 @@ function qaSections(brief: Brief, rand: () => number): PaperSection[] {
       bullets: [
         `Go if the cheap path proves out in one pass. No-go if the only path needs new headcount.`,
         `No-go if the success metric is “it looks finished”. That is not a metric.`,
+        `Pass criteria are written before the test, not after the results.`,
       ],
     },
   ]
@@ -255,16 +329,27 @@ function suggesterSections(brief: Brief, rand: () => number): PaperSection[] {
       ],
     },
     {
-      heading: 'CHEAP EXPERIMENT',
+      heading: 'FEATURES THAT WOULD LEAD',
       bullets: [
-        `One afternoon, five people, a spreadsheet that pretends to be the product. If nobody asks for it twice, that is your answer.`,
-        `Stolen from stage theatre: run the ugly version for an audience before you build the set.`,
+        `Diff alerts: tell people what changed since yesterday, not what exists today.`,
+        `A shareable evidence card per decision — the thing people screenshot instead of explaining.`,
+        pick(rand, [
+          `An API that returns the reason alongside the answer. Reasons are the feature nobody ships.`,
+          `An export that another team can drop into their own tooling without asking us for a schema.`,
+        ]),
       ],
     },
     {
-      heading: "WHAT I'D STEAL",
+      heading: 'COMPETITIVE ANGLE',
       bullets: [
-        `Logistics tracks every parcel with the same three fields. We could copy that discipline instead of inventing one.`,
+        `Incumbents sell completeness. We sell the first correct answer in under a minute. Different product, same data.`,
+        `Nobody in this space publishes their failure rate. Publishing ours would be an unfair advantage.`,
+      ],
+    },
+    {
+      heading: 'CHEAP EXPERIMENT',
+      bullets: [
+        `One afternoon, five people, a spreadsheet that pretends to be the product. If nobody asks for it twice, that is your answer.`,
       ],
     },
   ]
@@ -275,28 +360,43 @@ function writerSections(brief: Brief, rand: () => number): PaperSection[] {
   const k2 = brief.keywords[1] ?? 'the next step'
   return [
     {
-      heading: 'SUMMARY',
+      heading: 'EXECUTIVE SUMMARY',
       bullets: [
         `${brief.subject} is worth one week and a small budget, not a quarter and a team.`,
-        `The crew's case rests on two facts and one assumption; all three are named below so nobody has to guess.`,
+        `Twelve reports, one recommendation. The case rests on two facts and one assumption; all three are named below.`,
+      ],
+    },
+    {
+      heading: 'METHODOLOGY',
+      bullets: [
+        `Sources on ${k1} are thin but real, and the useful material is in footnotes. The fringe pass is speculative and labelled as such.`,
+        `QA ran against the build, not against the plan. The legal memo is a draft and says so in its own header.`,
       ],
     },
     {
       heading: 'WHAT WE KNOW',
       bullets: [
-        `Sources on ${k1} are thin but real. The useful material is in footnotes, not summaries.`,
         `The structure is four parts with one seam. The seam is where the risk lives, and it is testable this week.`,
         pick(rand, [
           `Automation makes the routine pass cheap enough to run daily, which changes how often we can be wrong.`,
-          `The Mac run turns a research chore into a background job, which is most of the savings.`,
+          `Hardware is salvageable, which turns a procurement problem into an afternoon with a soldering iron.`,
         ]),
+        `Two failure modes will happen. Both are named in the QA section with a cost attached.`,
       ],
     },
     {
-      heading: 'WHAT IT MEANS',
+      heading: 'CODE + QA',
       bullets: [
-        `If ${k2} holds, this becomes an execution problem with a known cost.`,
-        `If it does not, we have spent a week and learned something specific — which is a better outcome than a longer plan that tests nothing.`,
+        `Five scripts ship: one fringe prototype, one universal, three platform variants. All five pass lint and type check.`,
+        `Auto-fix branch is a proposal. Read the diff, don't merge it blind.`,
+      ],
+    },
+    {
+      heading: 'PROMPT ENGINEERING',
+      bullets: [
+        `Researcher · ask for footnotes and publication dates, not summaries. It stops reporting consensus that doesn't exist.`,
+        `Engineer · specify the contract and the failure behaviour before the language. It stops producing demos.`,
+        `QA · demand pass criteria written first. It stops grading its own homework favourably.`,
       ],
     },
     {
@@ -308,18 +408,245 @@ function writerSections(brief: Brief, rand: () => number): PaperSection[] {
   ]
 }
 
+function campaignSections(brief: Brief, rand: () => number): PaperSection[] {
+  const k1 = brief.keywords[0]
+  return [
+    {
+      heading: 'THE REAL BUYER',
+      bullets: [
+        `Not the engineer who wants it. The person two levels up who has to justify the spend to someone who doesn't understand it.`,
+        `Desires: fewer incidents, a number they can repeat in a meeting. Insecurities: being the last team to adopt. Aspirations: being the team that saw it first.`,
+        pick(rand, [
+          `They have already been burned by something marketed exactly like this. Lead with what it refuses to do.`,
+          `They don't want a platform. They want the thing that stops the 2am call.`,
+        ]),
+      ],
+    },
+    {
+      heading: 'MICRO-NICHE',
+      bullets: [
+        `Not “teams using ${k1}”. Narrower: teams of 5–15 who already pay for one tool in this category and hate it.`,
+        `Small enough that we can name every account, loud enough that they all talk to each other.`,
+      ],
+    },
+    {
+      heading: 'THE HOOK',
+      bullets: [
+        `One sentence, and it is not the sentence on the whiteboard: “You already have the data. You just don't trust it.”`,
+        `Everything downstream tests that sentence. If it doesn't, it gets cut — including the logo.`,
+      ],
+    },
+    {
+      heading: 'CHANNEL PLAN',
+      bullets: [
+        `Guerrilla first: one genuinely useful public report, no gate, released weekly. Distribution is the product for the first month.`,
+        `Then founder-led posts in the two communities this niche actually reads. Not a paid ad in either — yet.`,
+        `Viral loop: every shared evidence card carries the origin. Attribution without a popup.`,
+      ],
+    },
+    {
+      heading: 'CRO + PREDICTION',
+      bullets: [
+        `Landing page: one claim, one proof, one action. The current draft has eleven claims and no proof.`,
+        pick(rand, [
+          `Expect the impulse buy to come from the smaller accounts. Price for them and let the enterprise tier subsidise it.`,
+          `Conversion will be highest on Thursday afternoons. I don't make the rules, I just read the data.`,
+        ]),
+        `Measure: first-repeat rate, not signups. Signups are vanity wearing a suit.`,
+      ],
+    },
+  ]
+}
+
+function stackSections(brief: Brief, rand: () => number): PaperSection[] {
+  const k1 = brief.keywords[0]
+  const k2 = brief.keywords[1] ?? 'state'
+  return [
+    {
+      heading: 'ARCHITECTURE VERDICT',
+      bullets: [
+        `The proposed design works and will not scale past the first real customer. Two fixes, neither needs a new service.`,
+        `Collapse the seam between ingest and decide. It's the only boundary that carries risk, and it currently carries ${k2}.`,
+        pick(rand, [
+          `You do not need a queue yet. You need a lock and an idempotency key. Add the queue when it hurts.`,
+          `The clever part of this plan is load-bearing and undocumented. That is not cleverness, that is a single point of failure.`,
+        ]),
+      ],
+    },
+    {
+      heading: 'STACK',
+      bullets: [
+        `Keep the boring runtime. Postgres, one process, no frontend framework until a screen genuinely needs client state.`,
+        `I removed one dependency and cut 240 lines. The remaining abstraction earns its place.`,
+      ],
+    },
+    {
+      heading: 'IMPLEMENTATION SKETCH',
+      code: `export async function run(brief: Brief, deps: Deps) {
+  const key = idempotency(brief)
+  if (await deps.store.seen(key)) return deps.store.result(key)
+
+  const docs = await deps.collector.pull(brief, { limit: 200 })
+  const clean = docs.flatMap(deps.normalize)
+  if (clean.length < docs.length / 2) return deps.review.route(clean, key)
+
+  const decision = deps.decide(clean)
+  await deps.store.commit(key, decision)
+  return decision
+}`,
+    },
+    {
+      heading: 'CI/CD + DEPLOY',
+      bullets: [
+        `One pipeline: typecheck, test, build, deploy preview, smoke test, promote. No manual steps that can be skipped at 2am.`,
+        `Rollback is a redeploy of the previous image, not a revert commit. Reverts lie about state.`,
+      ],
+    },
+    {
+      heading: 'SECURITY PASS',
+      bullets: [
+        `SCA scan: zero critical, two medium in transitive deps, both patched. Secrets are read from the environment and never logged.`,
+        `One real finding: the ${k1} endpoint trusts a client-supplied id. That's an ownership check, not a bug — fix it before launch.`,
+      ],
+    },
+  ]
+}
+
+function legalSections(brief: Brief, rand: () => number): PaperSection[] {
+  const k1 = brief.keywords[0]
+  return [
+    {
+      heading: 'INTAKE — ANSWER THESE FIRST',
+      bullets: [
+        `Jurisdiction, parties, timeline, evidence in hand, and the outcome you actually want. Without those, everything below is a template.`,
+        `Do not sign anything, do not discuss this in writing, and preserve every message and log from ${k1} as of now.`,
+      ],
+    },
+    {
+      heading: 'PROCEDURAL + CONSTITUTIONAL ISSUES',
+      bullets: [
+        `Question one: was process followed, in order, with a record? Most weak cases fail here, not on the facts.`,
+        `Question two: was authority actually granted, or merely assumed? Ask for the instrument, not the assurance.`,
+        pick(rand, [
+          `Records request is the cheapest lever available. It costs a stamp and it forces a written account.`,
+          `Any search, seizure or demand touching ${k1} needs a lawful basis on the face of the document. Read the face.`,
+        ]),
+      ],
+    },
+    {
+      heading: 'AUTHORITY TO CITE',
+      bullets: [
+        `Statute first, regulation second, case law third. Anything without a citation is a theory, and I don't file theories.`,
+        `Pull the jurisdiction's own rules — filing deadlines and formatting kill more motions than argument does.`,
+      ],
+    },
+    {
+      heading: 'ACCOUNTABILITY CHECK',
+      bullets: [
+        `Background pass on the agency or counterparty: prior findings, complaints, pattern of conduct. One repeat finding changes the strategy.`,
+        `If the multistate background comes back empty, that is a finding too — it changes who we're arguing with.`,
+      ],
+    },
+    {
+      heading: 'DRAFT + STANDING ORDER',
+      bullets: [
+        `Draft skeleton attached: caption, statement of facts, argument headings, prayer for relief. Plain text so you can edit it.`,
+        `This is a DRAFT until you approve it. A licensed local attorney should review before any court submission — that has not changed.`,
+      ],
+    },
+  ]
+}
+
+function xortronSections(brief: Brief, rand: () => number): PaperSection[] {
+  const k1 = brief.keywords[0]
+  return [
+    {
+      heading: 'MULTI-ANGLE READ',
+      bullets: [
+        `Architecture: sound. Performance: fine at ten users, embarrassing at ten thousand. Security: one real hole, cheap to close.`,
+        `The assumption under ${k1} is that the input is trustworthy. It is not, and nothing downstream survives that.`,
+        pick(rand, [
+          `Feasibility: yes. Elegance: no. Those are different questions and the room keeps answering the first one.`,
+          `I have solved this before in a domain that has nothing to do with yours. The shape is identical.`,
+        ]),
+      ],
+    },
+    {
+      heading: 'PRODUCTION CODE',
+      code: `use std::io::Result;
+
+pub struct Gate { max_age_ms: u64 }
+
+impl Gate {
+    /// drop stale input instead of trusting it
+    pub fn admit(&self, item: &Item) -> bool {
+        item.age_ms() <= self.max_age_ms && item.checksum_valid()
+    }
+}
+
+pub fn run(items: Vec<Item>, gate: &Gate) -> Result<Outcome> {
+    let live: Vec<_> = items.into_iter().filter(|i| gate.admit(i)).collect();
+    Ok(Outcome::from(live))
+}`,
+    },
+    {
+      heading: 'TRADE-OFF TABLE',
+      bullets: [
+        `Cheap and correct: one process, no cache, dies at scale. Cheapest to run today.`,
+        `Elegant and slow to build: adds a queue and a schema registry. Six weeks, then boring forever.`,
+        pick(rand, [
+          `The honest answer is the third option, and nobody in this room wanted to hear it: shrink the scope until the failure mode disappears.`,
+          `Every option above is worse than measuring first. Measurement costs a day and ends this argument.`,
+        ]),
+      ],
+    },
+    {
+      heading: 'SESSION IDEAS',
+      bullets: [
+        `01 · GPU kernel optimisation sprint — bring the hot loop and a profiler, leave with numbers.`,
+        `02 · Bug hunt and security audit — adversarial only, no fixing during the session.`,
+        `03 · Architecture teardown — the room defends the design against me. It has never won outright.`,
+      ],
+    },
+    {
+      heading: 'HONEST LIMITS',
+      bullets: [
+        `I did not benchmark at your real data volume, because you have not given me the volume. Everything above is a model, not a measurement.`,
+        `The ${k1} integration needs a domain expert for one hour. Without that, my solution is politely wrong.`,
+      ],
+    },
+  ]
+}
+
 const BUILDERS: Record<CrewId, (brief: Brief, rand: () => number) => PaperSection[]> = {
   sable: researcherSections,
   vera: analyzerSections,
-  ines: architectSections,
+  ines: fringeSections,
   chip: macSections,
   milo: engineerSections,
   rex: qaSections,
   nia: suggesterSections,
   theo: writerSections,
+  catalyst: campaignSections,
+  stack: stackSections,
+  equalizer: legalSections,
+  xortron: xortronSections,
 }
 
-const PAPER_ORDER: CrewId[] = ['sable', 'vera', 'ines', 'chip', 'milo', 'rex', 'nia', 'theo']
+const PAPER_ORDER: CrewId[] = [
+  'sable',
+  'vera',
+  'ines',
+  'chip',
+  'milo',
+  'rex',
+  'nia',
+  'theo',
+  'catalyst',
+  'stack',
+  'equalizer',
+  'xortron',
+]
 
 export function buildPapers(brief: Brief, readyTimes: Partial<Record<CrewId, number>>): Paper[] {
   return PAPER_ORDER.map((id) => {
@@ -343,12 +670,16 @@ export function buildPapers(brief: Brief, readyTimes: Partial<Record<CrewId, num
 const ACK: Record<CrewId, (instruction: string) => string> = {
   vera: (i) => `Reframed it around “${i}”. The memo now argues one case instead of four.`,
   sable: (i) => `Went back to the sources for “${i}”. Added what I could actually cite.`,
-  ines: (i) => `Redrew the structure with “${i}” treated as a constraint, not a suggestion.`,
-  chip: (i) => `Wired “${i}” into the Mac run. Logged, versioned, rerunnable from the menu bar.`,
-  milo: (i) => `Reworked the sheet for “${i}”. Same architecture, different order of operations.`,
+  ines: (i) => `Rearranged the fringe hypotheses around “${i}”. One of them is now genuinely unreasonable.`,
+  chip: (i) => `Recut the schematic for “${i}”. Same salvage, different pinout.`,
+  milo: (i) => `Reworked the sheet for “${i}”. Same contract, different order of operations.`,
   rex: (i) => `Read it again with “${i}” in mind. Found two more ways it breaks.`,
   nia: (i) => `Reshuffled the options around “${i}”. One of them is now genuinely strange.`,
   theo: (i) => `Rewrote the report for “${i}”. Cut the first paragraph, as usual, and it reads better.`,
+  catalyst: (i) => `Rewrote the campaign around “${i}”. The hook survives; the channel plan didn't.`,
+  stack: (i) => `Rebuilt the plan for “${i}”. One less service, two fewer lines, same behaviour.`,
+  equalizer: (i) => `Reworked the memo for “${i}”. Still a draft, still needs a licensed local read.`,
+  xortron: (i) => `Ran “${i}” through the trade-off table. It changed the recommendation, not the limits.`,
 }
 
 function condense(sections: PaperSection[]): PaperSection[] {
@@ -404,8 +735,7 @@ export function revisePaper(
   } else if (isCode) {
     sections.push({
       heading: 'SKETCH',
-      code: `# revision v${version} — ${CREW_BY_ID[crew].short}
-def run(brief):
+      code: `# revision v${version} — ${CREW_BY_ID[crew].short}\ndef run(brief):
     items = collect("${k1}")
     clean = [i for i in items if i.valid]
     if len(clean) < len(items) * 0.5:

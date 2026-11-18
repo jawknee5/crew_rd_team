@@ -18,6 +18,9 @@ const IDLE_LINES: IdleLine[] = [
   { crew: 'sable', text: 'Give me any topic and I will find the 2014 forum thread where someone already tried it.' },
   { crew: 'milo', text: 'Three scripts half-finished and no brief. Typical Tuesday.' },
   { crew: 'ines', text: 'I can prototype almost anything. The word "almost" is doing real work there.' },
+  { crew: 'catalyst', text: 'Give me a product and I will find the person who cannot sleep without it.' },
+  { crew: 'xortron', text: 'Four solutions ready. Three are wrong and I know exactly why.' },
+  { crew: 'equalizer', text: 'Whatever you are about to sign, don\'t.' },
   { crew: 'rex', text: 'I already do not believe the plan we have not been given yet.' },
   { crew: 'chip', text: 'Standing by. Idle cycles are being logged, for no reason at all.' },
 ]
@@ -129,22 +132,26 @@ export default function App() {
     const beat = beatAt(meeting, clock)
     if (!beat) return
     const end = lineEnd(meeting, beat)
-    /* Space starts the waiting line, finishes a line mid-type, or moves on */
-    const target =
-      clock <= beat.start
-        ? Math.min(beat.start + 1, meeting.total)
-        : clock < end
-          ? end
-          : Math.min(beat.end, meeting.total)
-    patchActive((session) => ({ ...session, clock: target, updatedAt: Date.now() }))
+    /* one press = one visible move: start the waiting line, finish it mid-type,
+       or bring the next line straight in (it begins typing, not just thinking) */
+    let target: number
+    if (clock <= beat.start) {
+      target = beat.start + 1
+    } else if (clock < end) {
+      target = end
+    } else {
+      const next = meeting.beats.find((item) => item.start > beat.start)
+      target = next ? next.start + 1 : beat.end
+    }
+    patchActive((session) => ({ ...session, clock: Math.min(target, meeting.total), updatedAt: Date.now() }))
     if (!running) setRunning(true)
   }
 
   /* space bar / enter steps the conversation in read-along mode */
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
-      if (event.key !== ' ' && event.code !== 'Space' && event.key !== 'Enter') return
-      if (event.metaKey || event.ctrlKey || event.altKey) return
+      if (event.key !== ' ' && event.code !== 'Space' && event.key !== 'Spacebar' && event.key !== 'Enter') return
+      if (event.repeat || event.metaKey || event.ctrlKey || event.altKey) return
       const target = event.target as HTMLElement | null
       if (target) {
         const tag = target.tagName
@@ -154,8 +161,8 @@ export default function App() {
       event.preventDefault()
       advance()
     }
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
+    window.addEventListener('keydown', onKey, true)
+    return () => window.removeEventListener('keydown', onKey, true)
   })
 
   const startBrief = (text: string) => {
@@ -373,12 +380,17 @@ export default function App() {
 
       <section className="roster" aria-label="Crew roster">
         {CREW.map((member) => (
-          <div key={member.id} className="roster-card" title={`${member.bio} Quirk: ${member.quirk}`}>
+          <div
+            key={member.id}
+            className="roster-card"
+            title={`${member.bio}\n\nGOAL: ${member.goal}\nOUTPUT: ${member.expectedOutput}\nMODEL: ${member.model}\nTOOLS: ${member.tools.join(', ')}`}
+          >
             <PixelSprite crew={member.id} size={40} />
             <div className="roster-meta">
               <span className="roster-name">{member.name}</span>
               <span className="roster-role">{member.role}</span>
               <span className="roster-specialty">{member.specialty}</span>
+              <span className="roster-model">{member.model}</span>
             </div>
           </div>
         ))}

@@ -5,12 +5,16 @@ import { CREW_BY_ID } from '../data/crew'
 const TAGS: Record<CrewId, string> = {
   sable: 'SRCH',
   vera: 'MEMO',
-  ines: 'ARCH',
-  chip: 'MAC',
+  ines: 'FRINGE',
+  chip: 'HW',
   milo: 'BUILD',
   rex: 'QA',
   nia: 'IDEAS',
   theo: 'WRITE',
+  catalyst: 'MKTG',
+  stack: 'STACK',
+  equalizer: 'LEGAL',
+  xortron: 'XOR',
 }
 
 interface PaperIconProps {
