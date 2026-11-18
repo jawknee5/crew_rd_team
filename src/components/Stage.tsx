@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react'
 import type { CrewId } from '../data/crew'
 import { CREW, CREW_BY_ID } from '../data/crew'
 import type { Meeting, Paper } from '../types'
@@ -64,8 +65,25 @@ export function Stage({ meeting, clock, papers, flash, idleLine, onBoardClick, o
   const bubbleTail = Math.min(86, Math.max(14, 50 + (speakerPct - bubbleLeft) * 3.2))
   const phase = meeting ? (done ? 'RUN COMPLETE' : beat?.phase ?? 'QUEUED') : 'STANDBY'
 
+  const stageRef = useRef<HTMLDivElement>(null)
+  const speakerSeat = bubble ? CREW_BY_ID[bubble.crew].seat : null
+
+  /* camera: pan the frame so whoever is talking sits in the middle of the view */
+  useEffect(() => {
+    const stage = stageRef.current
+    const shell = stage?.parentElement
+    if (!stage || !shell || speakerSeat === null) return
+    const total = stage.offsetWidth
+    const visible = shell.clientWidth
+    if (!visible) return
+    const seatX = (speakerSeat / 360) * total
+    const target = total <= visible ? 0 : Math.max(0, Math.min(total - visible, seatX - visible / 2))
+    if (Math.abs(shell.scrollLeft - target) < 2) return
+    shell.scrollTo({ left: target, behavior: 'smooth' })
+  }, [speakerSeat])
+
   return (
-    <div className="stage">
+    <div className="stage" ref={stageRef}>
       <Room activeCrew={bubble?.crew ?? null} />
 
       <Whiteboard

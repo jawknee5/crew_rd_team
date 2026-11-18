@@ -52,7 +52,8 @@ export default function App() {
   const progress = meeting ? progressAt(meeting, clock) : 0
   const openPaper = papers.find((paper) => paper.id === openPaperId) ?? null
   const currentEnd = meeting && current ? Math.min(lineEnd(meeting, current), meeting.total) : 0
-  const awaitingSpace = Boolean(stepMode && running && meeting && current && !done && clock >= currentEnd)
+  const awaitingSpace = Boolean(stepMode && meeting && current && !done && clock >= currentEnd)
+  const atBeatStart = Boolean(stepMode && meeting && current && !done && clock <= current.start)
 
   const patchActive = (patch: (session: Session) => Session) => {
     setSessions((prev) => prev.map((session) => (session.id === activeId ? patch(session) : session)))
@@ -70,7 +71,10 @@ export default function App() {
         let next = Math.min(session.meeting.total, session.clock + CLOCK_TICK * speed)
         if (stepMode) {
           const beat = beatAt(session.meeting, session.clock)
-          if (beat) next = Math.min(next, lineEnd(session.meeting, beat))
+          if (!beat) return prev
+          /* read-along: a fresh line never starts until the user presses Space */
+          if (session.clock <= beat.start) return prev
+          next = Math.min(next, lineEnd(session.meeting, beat))
         }
         if (next === session.clock) return prev
         const copy = prev.slice()
@@ -125,7 +129,13 @@ export default function App() {
     const beat = beatAt(meeting, clock)
     if (!beat) return
     const end = lineEnd(meeting, beat)
-    const target = Math.min(clock < end ? end : beat.end, meeting.total)
+    /* Space starts the waiting line, finishes a line mid-type, or moves on */
+    const target =
+      clock <= beat.start
+        ? Math.min(beat.start + 1, meeting.total)
+        : clock < end
+          ? end
+          : Math.min(beat.end, meeting.total)
     patchActive((session) => ({ ...session, clock: target, updatedAt: Date.now() }))
     if (!running) setRunning(true)
   }
@@ -267,9 +277,11 @@ export default function App() {
           </button>
           {meeting && !done && (
             <>
-              <button type="button" className="btn btn-ghost" onClick={togglePause}>
-                {running ? 'PAUSE' : 'RESUME'}
-              </button>
+              {!stepMode && (
+                <button type="button" className="btn btn-ghost" onClick={togglePause}>
+                  {running ? 'PAUSE' : 'RESUME'}
+                </button>
+              )}
               <button
                 type="button"
                 className="btn btn-ghost"
@@ -328,7 +340,7 @@ export default function App() {
                 onClick={advance}
                 title="Reveal the line and step to the next one (Space)"
               >
-                {awaitingSpace ? 'SPACE ▸ NEXT' : 'SPACE ▸ REVEAL'}
+                {awaitingSpace ? 'SPACE ▸ NEXT' : atBeatStart ? 'SPACE ▸ START' : 'SPACE ▸ REVEAL'}
               </button>
             ) : (
               <span className="runbar-count">{papers.length ? `${ready.length}/${papers.length} PAPERS` : 'AWAITING BRIEF'}</span>
