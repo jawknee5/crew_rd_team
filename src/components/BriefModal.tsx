@@ -61,7 +61,7 @@ export function BriefModal({ initial, onClose, onStart }: BriefModalProps) {
         </div>
 
         <p className="brief-sub">
-          Give the crew a problem. They'll scope it, build on it, break it, and hand back six papers you can
+          Give the crew a problem. They'll scope it, build on it, break it, and hand back eight papers you can
           revise with any agent you like.
         </p>
 

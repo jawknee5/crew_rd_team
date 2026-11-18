@@ -9,28 +9,30 @@ interface BeatSpec {
   deliver?: CrewId
 }
 
-const THINK_MS = 420
-const CHAR_MS = 12
-const HOLD_MS = 680
+const THINK_MS = 620
+const CHAR_MS = 22
+const HOLD_MS = 1600
 
 export function buildMeeting(brief: Brief): Meeting {
   const rand = mulberry32(hashString(brief.clean))
   const kw = (i: number) => brief.keywords[i % brief.keywords.length] ?? 'the problem'
   const specs: BeatSpec[] = []
 
+  /* analyzer frames the room */
   specs.push({
     crew: 'vera',
     phase: 'FRAMING',
     text: pick(rand, [
-      `Board says: “${brief.subject}”. ${brief.modeLine} Sable, scope it before we all start guessing.`,
-      `“${brief.subject}” — that's the whole brief. ${brief.modeLine} Narrow first, then deep. Sable?`,
+      `Board says: “${brief.subject}”. ${brief.modeLine} Researcher first, opinions after. Sable, scope it.`,
+      `“${brief.subject}” — that's the whole brief. ${brief.modeLine} Narrow it before we all start guessing. Sable?`,
       `Topic's on the board: ${brief.subject}. ${brief.modeLine} No wandering, no vibes. Sable, go.`,
     ]),
   })
 
+  /* researcher */
   specs.push({
     crew: 'sable',
-    phase: 'RECON',
+    phase: 'RESEARCH',
     text: pick(rand, [
       `On ${kw(0)} now. There's a forum thread from 2014 where somebody already failed at this — reading it first.`,
       `Three angles on ${kw(0)}: vendor docs, field notes, and whatever people complain about in public.`,
@@ -39,55 +41,69 @@ export function buildMeeting(brief: Brief): Meeting {
   })
   specs.push({
     crew: 'sable',
-    phase: 'RECON',
+    phase: 'RESEARCH',
     deliver: 'sable',
     text: pick(rand, [
       `Dossier's up. Sources, dead ends, and the two gaps nobody has covered.`,
-      `Recon's in. I marked which claims I'd actually stake my name on.`,
+      `Research is in. I marked which claims I'd actually stake my name on.`,
       `That's the dossier. Note the 2014 thread — it saves us a month of rediscovery.`,
     ]),
   })
 
+  /* analyzer reads the evidence */
+  specs.push({
+    crew: 'vera',
+    phase: 'ANALYSIS',
+    text: pick(rand, [
+      `Dossier's readable, which is rare. Two claims are borrowed confidence — I marked them. Build on the other three.`,
+      `I took the dossier apart. The evidence supports the smaller version of this. Still worth building.`,
+      `Analysis is simple: ${kw(0)} is real, demand is assumed, and the cheap test is what separates the two.`,
+    ]),
+  })
+
+  /* architect */
+  specs.push({
+    crew: 'ines',
+    phase: 'ARCHITECTURE',
+    text: pick(rand, [
+      `Structure first. Four parts, one seam between normalize and decide. Everything else can be swapped later.`,
+      `On ${kw(0)}: the cheap structure is probably good enough. The elegant one is a trap with better lighting.`,
+      `Constraints before drawings — budget, materials, and how badly this can fail before anyone notices.`,
+    ]),
+  })
+  specs.push({
+    crew: 'ines',
+    phase: 'ARCHITECTURE',
+    deliver: 'ines',
+    text: pick(rand, [
+      `Sketch is up: parts, seam, and the test that kills it early.`,
+      `Architecture's on the table. I drew the seams, not the decorations.`,
+      `That's the sketch — four boxes, one risky seam, and a way to take it apart.`,
+    ]),
+  })
+
+  /* mac */
   specs.push({
     crew: 'chip',
-    phase: 'TOOLING',
+    phase: 'MAC OPS',
     text: pick(rand, [
-      `Spinning up a polite scraper for ${kw(0)}. Two workers, rate limited, cached so we can rerun it.`,
-      `I can ingest every public ${kw(0)} source and dedupe it. Cost estimate: one coffee.`,
-      `If ${kw(0)} has a public endpoint I can pull it. If it doesn't, I can still pull it.`,
+      `The Mac mini is already watching the folder for ${kw(0)}. Two Shortcuts workers, polite rate limits, cached.`,
+      `I can drive the whole ${kw(0)} pull from a Shortcut and a shell script. Cost estimate: one coffee.`,
+      `If ${kw(0)} has a public endpoint the Mac pulls it nightly. If it doesn't, the Mac still pulls it.`,
     ]),
   })
   specs.push({
     crew: 'chip',
-    phase: 'TOOLING',
+    phase: 'MAC OPS',
     deliver: 'chip',
     text: pick(rand, [
-      `Manifest's on the table — rerunnable, logged, and cheap enough to run twice.`,
-      `Tooling manifest ready. Same inputs will produce the same output, which is the whole point.`,
+      `Manifest's on the table — menu bar trigger, logged, cheap enough to run twice.`,
+      `Automation manifest ready. Same inputs, same output, reruns from Spotlight without a terminal.`,
       `Manifest is up. First full pass takes forty minutes. After that it's a diff every morning.`,
     ]),
   })
 
-  specs.push({
-    crew: 'ines',
-    phase: 'FEASIBILITY',
-    text: pick(rand, [
-      `On ${kw(0)}: the cheap version is probably good enough. The pretty version is a trap.`,
-      `Constraints first — budget, materials, and how badly this can fail before anyone notices.`,
-      `I can prototype ${kw(0)} with parts already in the bin. Maybe two bins.`,
-    ]),
-  })
-  specs.push({
-    crew: 'ines',
-    phase: 'FEASIBILITY',
-    deliver: 'ines',
-    text: pick(rand, [
-      `Sketch is in. Prototype path, rough BOM, and the test that kills it early.`,
-      `Feasibility's up. I built the kill criteria before I built the plan.`,
-      `That's the sketch — three parts, one joint, and a way to take it apart.`,
-    ]),
-  })
-
+  /* engineer */
   specs.push({
     crew: 'milo',
     phase: 'BUILD',
@@ -108,35 +124,78 @@ export function buildMeeting(brief: Brief): Meeting {
     ]),
   })
 
+  /* QA */
   specs.push({
     crew: 'rex',
-    phase: 'RED TEAM',
+    phase: 'QA',
     text: pick(rand, [
-      `Counterpoint. ${kw(0)} assumes the data is honest and the users are patient. Both are usually false.`,
+      `QA pass. ${kw(0)} assumes the data is honest and the users are patient. Both are usually false.`,
       `It breaks at the edges — bad inputs, no budget, and whoever inherits this in a year.`,
       `Found three ways this fails. One workaround is borderline legal; I flagged it as such.`,
     ]),
   })
   specs.push({
     crew: 'rex',
-    phase: 'RED TEAM',
+    phase: 'QA',
     deliver: 'rex',
     text: pick(rand, [
-      `Red team notes are on the table. Failure modes, workarounds, and my go/no-go conditions.`,
-      `Notes are in. Read the go/no-go last — it's the part that costs money.`,
-      `That's the red team pass. Two of these will happen; plan for them now, not later.`,
+      `QA report's on the table. Failure modes, test pass, and my go/no-go conditions.`,
+      `Report's in. Read the go/no-go last — it's the part that costs money.`,
+      `That's the QA pass. Two of these will happen; plan for them now, not later.`,
+    ]),
+  })
+
+  /* suggester */
+  specs.push({
+    crew: 'nia',
+    phase: 'IDEATION',
+    text: pick(rand, [
+      `Sideways option: don't build ${kw(0)} — build the check that tells people theirs is broken. Smaller, stranger, easier to sell.`,
+      `What if this ships as a weekly report instead of a tool? Same data, no interface, one less thing to maintain.`,
+      `I have three alternatives, one of which is genuinely bad and I like it anyway. Look at all three.`,
+    ]),
+  })
+  specs.push({
+    crew: 'nia',
+    phase: 'IDEATION',
+    deliver: 'nia',
+    text: pick(rand, [
+      `Options deck is up. The obvious plan is in there too, so we can argue with it properly.`,
+      `Deck's in: three sideways options and the one-afternoon test that picks between them.`,
+      `That's the options deck. Option two is the one nobody in this room would have pitched.`,
+    ]),
+  })
+
+  /* writer */
+  specs.push({
+    crew: 'theo',
+    phase: 'WRITING',
+    text: pick(rand, [
+      `I'll write the version a stranger can act on. One page, no jargon, numbers where numbers belong.`,
+      `Give me twenty minutes. Everything above this line becomes the report; everything below it becomes an appendix.`,
+      `Writing it now. If a sentence doesn't change a decision, it's getting cut.`,
+    ]),
+  })
+  specs.push({
+    crew: 'theo',
+    phase: 'WRITING',
+    deliver: 'theo',
+    text: pick(rand, [
+      `Report's up. Summary first, evidence second, next steps last, and nothing I couldn't defend.`,
+      `Draft's on the table. I deleted the first paragraph twice; it's better for it.`,
+      `That's the written report. Read the next steps if you only have thirty seconds.`,
     ]),
   })
 
   specs.push({
     crew: 'milo',
-    phase: 'RED TEAM',
+    phase: 'SYNTHESIS',
     text: `Fair. I'll add a guard rail and a fallback that degrades instead of dying.`,
   })
   specs.push({
     crew: 'chip',
-    phase: 'RED TEAM',
-    text: `Queued three jobs off that. Logs will tell us which assumption breaks first.`,
+    phase: 'SYNTHESIS',
+    text: `Queued three jobs off that. The Mac will tell us which assumption breaks first.`,
   })
 
   const closers = [
@@ -172,6 +231,11 @@ export function beatAt(meeting: Meeting, clock: number): Beat | null {
     else break
   }
   return current
+}
+
+/** The clock value at which a beat's line has finished typing. */
+export function lineEnd(meeting: Meeting, beat: Beat): number {
+  return beat.typeStart + beat.text.length * meeting.charMs
 }
 
 export function progressAt(meeting: Meeting, clock: number): number {

@@ -73,6 +73,7 @@ export function Stage({ meeting, clock, papers, flash, idleLine, onBoardClick, o
         modeLabel={meeting?.brief.modeLabel ?? null}
         phase={phase}
         papersIn={ready.length}
+        papersTotal={papers.length}
         progress={progress}
         onClick={onBoardClick}
       />

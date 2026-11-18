@@ -3,7 +3,7 @@ import type { CrewId } from '../data/crew'
 import { CREW_BY_ID } from '../data/crew'
 import { hashString, mulberry32, pick } from './brief'
 
-function sableSections(brief: Brief, rand: () => number): PaperSection[] {
+function researcherSections(brief: Brief, rand: () => number): PaperSection[] {
   const k1 = brief.keywords[0]
   const k2 = brief.keywords[1] ?? 'the adjacent material'
   return [
@@ -37,7 +37,7 @@ function sableSections(brief: Brief, rand: () => number): PaperSection[] {
       ],
     },
     {
-      heading: 'SCOUT NOTE',
+      heading: 'RESEARCHER NOTE',
       bullets: [
         `If we only read the top three results, we will reproduce exactly what already exists. I'd rather start at page four.`,
       ],
@@ -45,16 +45,87 @@ function sableSections(brief: Brief, rand: () => number): PaperSection[] {
   ]
 }
 
-function chipSections(brief: Brief, rand: () => number): PaperSection[] {
+function analyzerSections(brief: Brief, rand: () => number): PaperSection[] {
+  const k1 = brief.keywords[0]
+  const k2 = brief.keywords[1] ?? 'the build'
+  return [
+    {
+      heading: 'FRAMING',
+      bullets: [
+        `Question as written: “${brief.clean}”.`,
+        `Operational version: what is the cheapest test that could change our mind about ${k1}?`,
+      ],
+    },
+    {
+      heading: 'CLAIMS THAT SURVIVE',
+      bullets: [
+        `Recon is thin but sufficient to start. Automating it is cheap. The risky assumption is ${k2}, not the build itself.`,
+        pick(rand, [
+          `Three of the five claims in the dossier hold up under their own footnotes. The other two are borrowed confidence.`,
+          `Two sources disagree about ${k1}, and the newer one is quoting the older one. That collapses the evidence for the nicer story.`,
+        ]),
+      ],
+    },
+    {
+      heading: 'DECISION',
+      bullets: [
+        `Run the cheap path first. Build, measure, then decide with numbers instead of taste.`,
+        `Spend one week proving the riskiest assumption. If it holds, the rest is execution.`,
+      ],
+    },
+    {
+      heading: 'NEXT 3 MOVES',
+      bullets: [
+        `1. Sable locks the source list. 2. Ines draws the structure. 3. Rex writes the kill criteria before we get attached.`,
+      ],
+    },
+  ]
+}
+
+function architectSections(brief: Brief, rand: () => number): PaperSection[] {
   const k1 = brief.keywords[0]
   return [
     {
-      heading: 'RIG',
+      heading: 'CONSTRAINTS',
       bullets: [
-        `Two scraper workers, polite rate limits, one dedupe pass, one daily diff. Nothing exotic.`,
+        `Materials already in the bin cover an ugly version of ${k1}. Anything custom is a two-week detour pretending to be a shopping trip.`,
         pick(rand, [
-          `Everything caches to disk so the whole run can be repeated without annoying anyone upstream.`,
-          `Every job writes a log with inputs, outputs, and the exact version that produced them.`,
+          `Budget assumption: embarrassingly small. That is a feature — it kills bad ideas early.`,
+          `No new vendors. If it needs a purchase order, it needs a better reason.`,
+        ]),
+      ],
+    },
+    {
+      heading: 'SHAPE OF THE SYSTEM',
+      bullets: [
+        `Four pieces, one contract between them: ingest → normalize → decide → publish. Each rerunnable on its own.`,
+        `The seam that matters is between normalize and decide. Everything else can be swapped later without a rewrite.`,
+      ],
+    },
+    {
+      heading: 'INTERFACES',
+      bullets: [
+        `Input: one record per item, with a source and a timestamp attached or it does not enter.`,
+        `Output: one decision per item, plus the reason. Reasons are what make this debuggable in six months.`,
+      ],
+    },
+    {
+      heading: 'ROUGH BOM',
+      bullets: [`4× off-the-shelf modules · 1× printed bracket · 2m of cable · 1 roll of tape, structural.`],
+    },
+  ]
+}
+
+function macSections(brief: Brief, rand: () => number): PaperSection[] {
+  const k1 = brief.keywords[0]
+  return [
+    {
+      heading: 'MAC RIG',
+      bullets: [
+        `Two Shortcuts workers on the Mac mini, polite rate limits, one dedupe pass, one daily diff. Nothing exotic.`,
+        pick(rand, [
+          `The whole run is a shell script behind a Shortcut, so it can be kicked off from the menu bar without opening a terminal.`,
+          `Everything caches to disk so the run can repeat without annoying anyone upstream.`,
         ]),
       ],
     },
@@ -67,7 +138,7 @@ function chipSections(brief: Brief, rand: () => number): PaperSection[] {
       ],
     },
     {
-      heading: 'THROUGHPUT',
+      heading: 'SCHEDULE',
       bullets: [
         pick(rand, [
           `First full pass: ~40 minutes. Incremental: under two. Cost: one coffee.`,
@@ -79,51 +150,14 @@ function chipSections(brief: Brief, rand: () => number): PaperSection[] {
     {
       heading: 'WHAT I DID NOT CHECK',
       bullets: [
-        `Robots rules on two of the sources. I flagged them; legal should glance before we lean on them.`,
+        `Robots rules on two of the sources. I flagged them; someone should glance before we lean on them.`,
         `Whether ${k1} data is stable day to day. The diff will answer that by Thursday.`,
       ],
     },
   ]
 }
 
-function inesSections(brief: Brief, rand: () => number): PaperSection[] {
-  const k1 = brief.keywords[0]
-  return [
-    {
-      heading: 'CONSTRAINTS',
-      bullets: [
-        `Materials already in the bin cover an ugly prototype of ${k1}. Anything custom is a two-week detour pretending to be a shopping trip.`,
-        pick(rand, [
-          `Budget assumption: embarrassingly small. That is a feature — it kills bad ideas early.`,
-          `No new vendors. If it needs a purchase order, it needs a better reason.`,
-        ]),
-      ],
-    },
-    {
-      heading: 'FIRST PROTOTYPE',
-      bullets: [
-        `Build the version that proves the risky assumption, not the version that looks good in a demo.`,
-        `Three parts, one joint, and a way to take it apart without breaking it.`,
-      ],
-    },
-    {
-      heading: 'TEST PROTOCOL',
-      bullets: [
-        `Kill criteria first: if ${k1} can't survive bad input, the rest of the plan is decoration.`,
-        pick(rand, [
-          `Ten minutes of deliberately hostile use, filmed. Cheaper than a review meeting.`,
-          `Two testers who have never seen the concept. Their confusion is the most valuable data we own.`,
-        ]),
-      ],
-    },
-    {
-      heading: 'ROUGH BOM',
-      bullets: [`4× off-the-shelf modules · 1× printed bracket · 2m of cable · 1 roll of tape, structural.`],
-    },
-  ]
-}
-
-function miloSections(brief: Brief): PaperSection[] {
+function engineerSections(brief: Brief): PaperSection[] {
   const k1 = brief.keywords[0]
   const k2 = brief.keywords[1] ?? 'confidence'
   return [
@@ -165,7 +199,7 @@ def decide(items):
   ]
 }
 
-function rexSections(brief: Brief, rand: () => number): PaperSection[] {
+function qaSections(brief: Brief, rand: () => number): PaperSection[] {
   const k1 = brief.keywords[0]
   const k2 = brief.keywords[1] ?? 'the handoff'
   return [
@@ -181,14 +215,11 @@ function rexSections(brief: Brief, rand: () => number): PaperSection[] {
       ],
     },
     {
-      heading: 'UNORTHODOX WORKAROUNDS',
+      heading: 'TEST PASS',
       bullets: [
-        `Ship the manual version for a week and let real users reveal the edge cases for free.`,
-        pick(rand, [
-          `Mirror all inputs locally and replay failures instead of clicking around trying to reproduce them.`,
-          `Keep a dead-simple fallback that works badly but always works. Nobody regrets it.`,
-        ]),
-        `Ask the two loudest skeptics to break it before launch. Pay them in credit.`,
+        `Hostile input first: empty, doubled, encoded wrong, and one field that is a novel instead of a number.`,
+        `Then the boring test nobody runs: kill it mid-run and start it again. It should not care.`,
+        `Pass criteria are written before the test, not after the results.`,
       ],
     },
     {
@@ -201,55 +232,97 @@ function rexSections(brief: Brief, rand: () => number): PaperSection[] {
   ]
 }
 
-function veraSections(brief: Brief, rand: () => number): PaperSection[] {
+function suggesterSections(brief: Brief, rand: () => number): PaperSection[] {
   const k1 = brief.keywords[0]
-  const k2 = brief.keywords[1] ?? 'the build'
+  const k2 = brief.keywords[1] ?? 'the constraint'
   return [
     {
-      heading: 'FRAMING',
+      heading: 'THE OBVIOUS VERSION',
       bullets: [
-        `Question as written: “${brief.clean}”.`,
-        `Operational version: what is the cheapest test that could change our mind about ${k1}?`,
+        `Everyone in the room is converging on one plan for ${k1}. Here is that plan, written plainly so we can argue with it.`,
+        `It is fine. It is also the version our competitors will land on the same week, which is the actual problem.`,
       ],
     },
     {
-      heading: 'WHAT THE ROOM AGREES ON',
+      heading: 'THREE SIDEWAYS OPTIONS',
       bullets: [
-        `Recon is thin but sufficient to start. Tooling is cheap. The risky assumption is ${k2}, not the build.`,
+        `01 · Don't build ${k1} — build the check that tells people theirs is broken. Smaller, stranger, easier to sell.`,
+        `02 · Ship it as a weekly report instead of a tool. Same data, no interface, one less thing to maintain.`,
         pick(rand, [
-          `The ugly prototype answers more than the polished plan does.`,
-          `Everyone independently reached “test it small first”, which is rare and worth respecting.`,
+          `03 · Rent the hard part for a month and spend the saved time on ${k2}. Buy the answer, own the question.`,
+          `03 · Give the whole thing away and charge for the archive. The archive is the part nobody else has.`,
         ]),
       ],
     },
     {
-      heading: 'DECISION',
+      heading: 'CHEAP EXPERIMENT',
       bullets: [
-        `Run the cheap path first. Prototype, measure, then decide with numbers instead of taste.`,
-        `Spend one week proving the riskiest assumption. If it holds, the rest is execution.`,
+        `One afternoon, five people, a spreadsheet that pretends to be the product. If nobody asks for it twice, that is your answer.`,
+        `Stolen from stage theatre: run the ugly version for an audience before you build the set.`,
       ],
     },
     {
-      heading: 'NEXT 3 MOVES',
+      heading: "WHAT I'D STEAL",
       bullets: [
-        `1. Sable locks the source list. 2. Ines ships the ugly prototype. 3. Rex writes the kill criteria before we get attached.`,
+        `Logistics tracks every parcel with the same three fields. We could copy that discipline instead of inventing one.`,
+      ],
+    },
+  ]
+}
+
+function writerSections(brief: Brief, rand: () => number): PaperSection[] {
+  const k1 = brief.keywords[0]
+  const k2 = brief.keywords[1] ?? 'the next step'
+  return [
+    {
+      heading: 'SUMMARY',
+      bullets: [
+        `${brief.subject} is worth one week and a small budget, not a quarter and a team.`,
+        `The crew's case rests on two facts and one assumption; all three are named below so nobody has to guess.`,
+      ],
+    },
+    {
+      heading: 'WHAT WE KNOW',
+      bullets: [
+        `Sources on ${k1} are thin but real. The useful material is in footnotes, not summaries.`,
+        `The structure is four parts with one seam. The seam is where the risk lives, and it is testable this week.`,
+        pick(rand, [
+          `Automation makes the routine pass cheap enough to run daily, which changes how often we can be wrong.`,
+          `The Mac run turns a research chore into a background job, which is most of the savings.`,
+        ]),
+      ],
+    },
+    {
+      heading: 'WHAT IT MEANS',
+      bullets: [
+        `If ${k2} holds, this becomes an execution problem with a known cost.`,
+        `If it does not, we have spent a week and learned something specific — which is a better outcome than a longer plan that tests nothing.`,
+      ],
+    },
+    {
+      heading: 'NEXT STEPS',
+      bullets: [
+        `1. Freeze the source list. 2. Prove the risky assumption with the ugly build. 3. Agree the go/no-go rule in writing before results arrive.`,
       ],
     },
   ]
 }
 
 const BUILDERS: Record<CrewId, (brief: Brief, rand: () => number) => PaperSection[]> = {
-  sable: sableSections,
-  chip: chipSections,
-  ines: inesSections,
-  milo: miloSections,
-  rex: rexSections,
-  vera: veraSections,
+  sable: researcherSections,
+  vera: analyzerSections,
+  ines: architectSections,
+  chip: macSections,
+  milo: engineerSections,
+  rex: qaSections,
+  nia: suggesterSections,
+  theo: writerSections,
 }
 
+const PAPER_ORDER: CrewId[] = ['sable', 'vera', 'ines', 'chip', 'milo', 'rex', 'nia', 'theo']
+
 export function buildPapers(brief: Brief, readyTimes: Partial<Record<CrewId, number>>): Paper[] {
-  const ids: CrewId[] = ['sable', 'chip', 'ines', 'milo', 'rex', 'vera']
-  return ids.map((id) => {
+  return PAPER_ORDER.map((id) => {
     const member = CREW_BY_ID[id]
     const rand = mulberry32(hashString(`${brief.clean}::${id}`))
     return {
@@ -270,10 +343,12 @@ export function buildPapers(brief: Brief, readyTimes: Partial<Record<CrewId, num
 const ACK: Record<CrewId, (instruction: string) => string> = {
   vera: (i) => `Reframed it around “${i}”. The memo now argues one case instead of four.`,
   sable: (i) => `Went back to the sources for “${i}”. Added what I could actually cite.`,
-  chip: (i) => `Applied “${i}” across every section. Logged, versioned, rerunnable.`,
-  ines: (i) => `Rebuilt the section with “${i}” treated as a constraint, not a suggestion.`,
+  ines: (i) => `Redrew the structure with “${i}” treated as a constraint, not a suggestion.`,
+  chip: (i) => `Wired “${i}” into the Mac run. Logged, versioned, rerunnable from the menu bar.`,
   milo: (i) => `Reworked the sheet for “${i}”. Same architecture, different order of operations.`,
   rex: (i) => `Read it again with “${i}” in mind. Found two more ways it breaks.`,
+  nia: (i) => `Reshuffled the options around “${i}”. One of them is now genuinely strange.`,
+  theo: (i) => `Rewrote the report for “${i}”. Cut the first paragraph, as usual, and it reads better.`,
 }
 
 function condense(sections: PaperSection[]): PaperSection[] {
@@ -296,7 +371,10 @@ export function revisePaper(
   const k1 = brief.keywords[0]
   const k2 = brief.keywords[1] ?? 'the next step'
   const version = paper.version + 1
-  let sections: PaperSection[] = paper.sections.map((s) => ({ ...s, bullets: s.bullets ? [...s.bullets] : undefined }))
+  let sections: PaperSection[] = paper.sections.map((s) => ({
+    ...s,
+    bullets: s.bullets ? [...s.bullets] : undefined,
+  }))
   const changes: string[] = []
 
   const isShort = /(short|concise|trim|cut|tight|brief|summar|condense|one page)/.test(t)

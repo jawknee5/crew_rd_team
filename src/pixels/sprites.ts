@@ -197,6 +197,50 @@ function hairCap(g: Grid, p: Palette) {
   fill(g, 15, 5, 1, 3, p.h)
 }
 
+function hairCurls(g: Grid, p: Palette) {
+  // rounded, coily crown that sits above the face
+  fill(g, 6, 0, 8, 1, p.o)
+  fill(g, 4, 1, 12, 1, p.o)
+  fill(g, 3, 2, 2, 6, p.o)
+  fill(g, 15, 2, 2, 6, p.o)
+  fill(g, 7, 1, 6, 1, p.h)
+  fill(g, 5, 2, 10, 1, p.h)
+  fill(g, 4, 3, 3, 5, p.h)
+  fill(g, 13, 3, 3, 5, p.h)
+  // fringe, keeping row 6 (eyes) clear
+  fill(g, 5, 3, 10, 1, p.h)
+  put(g, 6, 1, p.H)
+  put(g, 10, 1, p.H)
+  put(g, 13, 2, p.H)
+  put(g, 4, 6, p.h)
+  put(g, 15, 6, p.h)
+  // curl texture
+  put(g, 7, 2, p.H)
+  put(g, 12, 3, p.H)
+  put(g, 4, 4, p.H)
+}
+
+function hairLong(g: Grid, p: Palette) {
+  // parted crown with hair down past the jaw
+  fill(g, 5, 0, 10, 1, p.o)
+  fill(g, 6, 1, 8, 1, p.h)
+  fill(g, 4, 2, 12, 1, p.h)
+  fill(g, 4, 3, 2, 10, p.h)
+  fill(g, 14, 3, 2, 10, p.h)
+  fill(g, 3, 4, 1, 8, p.h)
+  fill(g, 16, 4, 1, 8, p.h)
+  // side part + fringe
+  fill(g, 6, 3, 8, 1, p.h)
+  put(g, 11, 3, p.H)
+  put(g, 5, 3, p.o)
+  put(g, 14, 3, p.o)
+  // shaded ends
+  put(g, 3, 11, p.o)
+  put(g, 16, 11, p.o)
+  put(g, 4, 12, p.h)
+  put(g, 15, 12, p.h)
+}
+
 function drawRobot(g: Grid, p: Palette) {
   // antenna
   put(g, 9, 1, p.o)
@@ -268,6 +312,9 @@ function drawAccessory(g: Grid, kind: Accessory, p: Palette) {
     put(g, 9, 6, p.a)
     put(g, 11, 6, p.a)
     put(g, 13, 6, p.a)
+  } else if (kind === 'earring') {
+    put(g, 4, 8, p.a)
+    put(g, 15, 8, p.a)
   } else if (kind === 'stubble') {
     put(g, 6, 9, p.h)
     put(g, 8, 10, p.h)
@@ -286,14 +333,11 @@ function buildGrid(member: CrewMember): Grid {
 
   if (member.hair === 'robot') {
     drawRobot(g, p)
-    drawBody(g, p, 'jacket', member.accent)
+    drawBody(g, p, member.outfit, member.accent)
     return g
   }
 
-  const kind: 'shirt' | 'coat' | 'hoodie' | 'jacket' =
-    member.id === 'ines' ? 'coat' : member.id === 'sable' ? 'hoodie' : member.id === 'rex' ? 'jacket' : 'shirt'
-
-  drawBody(g, p, kind, member.accent)
+  drawBody(g, p, member.outfit, member.accent)
   drawHead(g, p)
 
   const hair: Record<HairStyle, (grid: Grid, pal: Palette) => void> = {
@@ -303,6 +347,8 @@ function buildGrid(member: CrewMember): Grid {
     bun: hairBun,
     cap: hairCap,
     robot: drawRobot,
+    curls: hairCurls,
+    long: hairLong,
   }
   hair[member.hair](g, p)
   drawAccessory(g, member.accessory, p)

@@ -77,13 +77,13 @@ export function Room({ activeCrew }: { activeCrew: CrewId | null }) {
         const active = activeCrew === member.id
         return (
           <g key={`chair-${member.id}`}>
-            <rect x={member.seat - 26} y="75" width="52" height="59" fill="#0f1725" />
-            <rect x={member.seat - 25} y="76" width="50" height="57" fill="#253049" />
-            <rect x={member.seat - 25} y="76" width="50" height="4" fill="#33405e" />
-            <rect x={member.seat - 25} y="76" width="50" height="1" fill={active ? member.accent : '#3d4b6b'} />
-            <rect x={member.seat - 22} y="82" width="44" height="2" fill="#1b2437" />
-            <rect x={member.seat - 28} y="100" width="4" height="34" fill="#131a27" />
-            <rect x={member.seat + 24} y="100" width="4" height="34" fill="#131a27" />
+            <rect x={member.seat - 22} y="75" width="44" height="59" fill="#0f1725" />
+            <rect x={member.seat - 21} y="76" width="42" height="57" fill="#253049" />
+            <rect x={member.seat - 21} y="76" width="42" height="4" fill="#33405e" />
+            <rect x={member.seat - 21} y="76" width="42" height="1" fill={active ? member.accent : '#3d4b6b'} />
+            <rect x={member.seat - 18} y="82" width="36" height="2" fill="#1b2437" />
+            <rect x={member.seat - 24} y="100" width="4" height="34" fill="#131a27" />
+            <rect x={member.seat + 20} y="100" width="4" height="34" fill="#131a27" />
           </g>
         )
       })}

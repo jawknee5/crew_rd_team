@@ -3,11 +3,20 @@ interface WhiteboardProps {
   modeLabel: string | null
   phase: string
   papersIn: number
+  papersTotal: number
   progress: number
   onClick: () => void
 }
 
-export function Whiteboard({ topic, modeLabel, phase, papersIn, progress, onClick }: WhiteboardProps) {
+export function Whiteboard({
+  topic,
+  modeLabel,
+  phase,
+  papersIn,
+  papersTotal,
+  progress,
+  onClick,
+}: WhiteboardProps) {
   return (
     <button
       type="button"
@@ -27,7 +36,7 @@ export function Whiteboard({ topic, modeLabel, phase, papersIn, progress, onClic
         </span>
         <span className="board-meta">
           <span className="board-mode">{modeLabel ?? 'AWAITING BRIEF'}</span>
-          <span className="board-count">{topic ? `${papersIn}/6 PAPERS` : 'NO RUN'}</span>
+          <span className="board-count">{topic ? `${papersIn}/${papersTotal} PAPERS` : 'NO RUN'}</span>
         </span>
         <span className="board-progress" aria-hidden="true">
           <i style={{ width: `${Math.round(progress * 100)}%` }} />

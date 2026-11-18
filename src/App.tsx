@@ -2,13 +2,16 @@ import { useEffect, useRef, useState } from 'react'
 import type { CrewId } from './data/crew'
 import { CREW, CREW_BY_ID } from './data/crew'
 import { parseBrief } from './engine/brief'
-import { beatAt, buildMeeting, progressAt, readyTimes } from './engine/meeting'
+import { beatAt, buildMeeting, lineEnd, progressAt, readyTimes } from './engine/meeting'
 import { buildPapers, revisePaper } from './engine/papers'
 import type { IdleLine } from './components/Stage'
 import { Stage } from './components/Stage'
 import { BriefModal } from './components/BriefModal'
 import { DocPanel } from './components/DocPanel'
+import { SessionRail } from './components/SessionRail'
 import { PixelSprite } from './components/PixelSprite'
+import type { Session } from './sessions'
+import { MAX_SESSIONS, loadSessions, newSessionId, saveSessions } from './sessions'
 
 const IDLE_LINES: IdleLine[] = [
   { crew: 'vera', text: 'Board is blank. Click it and tell us what to research, build, or break.' },
@@ -22,11 +25,12 @@ const IDLE_LINES: IdleLine[] = [
 const CLOCK_TICK = 90
 
 export default function App() {
-  const [meeting, setMeeting] = useState<ReturnType<typeof buildMeeting> | null>(null)
-  const [papers, setPapers] = useState<ReturnType<typeof buildPapers>>([])
-  const [clock, setClock] = useState(0)
+  const [sessions, setSessions] = useState<Session[]>(() => loadSessions())
+  const [activeId, setActiveId] = useState<string | null>(sessions[0]?.id ?? null)
   const [running, setRunning] = useState(false)
   const [speed, setSpeed] = useState(1)
+  const [stepMode, setStepMode] = useState(true)
+  const [railOpen, setRailOpen] = useState(true)
   const [briefOpen, setBriefOpen] = useState(false)
   const [openPaperId, setOpenPaperId] = useState<string | null>(null)
   const [pending, setPending] = useState<{ paperId: string; crew: CrewId } | null>(null)
@@ -37,24 +41,64 @@ export default function App() {
   const flashTimer = useRef<number | null>(null)
   const revisionTimer = useRef<number | null>(null)
 
+  const active = sessions.find((session) => session.id === activeId) ?? null
+  const meeting = active?.meeting ?? null
+  const papers = active?.papers ?? []
+  const clock = active?.clock ?? 0
+
   const done = Boolean(meeting && clock >= meeting.total)
   const current = meeting ? beatAt(meeting, clock) : null
   const ready = papers.filter((paper) => meeting && clock >= paper.readyAt)
   const progress = meeting ? progressAt(meeting, clock) : 0
   const openPaper = papers.find((paper) => paper.id === openPaperId) ?? null
+  const currentEnd = meeting && current ? Math.min(lineEnd(meeting, current), meeting.total) : 0
+  const awaitingSpace = Boolean(stepMode && running && meeting && current && !done && clock >= currentEnd)
+
+  const patchActive = (patch: (session: Session) => Session) => {
+    setSessions((prev) => prev.map((session) => (session.id === activeId ? patch(session) : session)))
+  }
 
   /* virtual clock */
   useEffect(() => {
-    if (!running || !meeting) return
+    if (!running || !activeId) return
     const id = window.setInterval(() => {
-      setClock((value) => Math.min(meeting.total, value + CLOCK_TICK * speed))
+      setSessions((prev) => {
+        const index = prev.findIndex((session) => session.id === activeId)
+        if (index < 0) return prev
+        const session = prev[index]
+        if (!session.meeting) return prev
+        let next = Math.min(session.meeting.total, session.clock + CLOCK_TICK * speed)
+        if (stepMode) {
+          const beat = beatAt(session.meeting, session.clock)
+          if (beat) next = Math.min(next, lineEnd(session.meeting, beat))
+        }
+        if (next === session.clock) return prev
+        const copy = prev.slice()
+        copy[index] = { ...session, clock: next }
+        return copy
+      })
     }, CLOCK_TICK)
     return () => window.clearInterval(id)
-  }, [running, speed, meeting])
+  }, [running, speed, stepMode, activeId])
 
   useEffect(() => {
     if (meeting && clock >= meeting.total && running) setRunning(false)
   }, [clock, meeting, running])
+
+  /* persist sessions, debounced so the ticking clock doesn't hammer storage */
+  const sessionsRef = useRef(sessions)
+  sessionsRef.current = sessions
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => saveSessions(sessionsRef.current), 900)
+    return () => window.clearTimeout(timer)
+  }, [sessions])
+
+  useEffect(() => {
+    const flush = () => saveSessions(sessionsRef.current)
+    window.addEventListener('pagehide', flush)
+    return () => window.removeEventListener('pagehide', flush)
+  }, [])
 
   /* idle chatter */
   useEffect(() => {
@@ -76,14 +120,52 @@ export default function App() {
     flashTimer.current = window.setTimeout(() => setFlash(null), 8000)
   }
 
+  const advance = () => {
+    if (!meeting || done) return
+    const beat = beatAt(meeting, clock)
+    if (!beat) return
+    const end = lineEnd(meeting, beat)
+    const target = Math.min(clock < end ? end : beat.end, meeting.total)
+    patchActive((session) => ({ ...session, clock: target, updatedAt: Date.now() }))
+    if (!running) setRunning(true)
+  }
+
+  /* space bar / enter steps the conversation in read-along mode */
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key !== ' ' && event.code !== 'Space' && event.key !== 'Enter') return
+      if (event.metaKey || event.ctrlKey || event.altKey) return
+      const target = event.target as HTMLElement | null
+      if (target) {
+        const tag = target.tagName
+        if (tag === 'INPUT' || tag === 'TEXTAREA' || target.isContentEditable) return
+      }
+      if (!stepMode || !meeting || done || briefOpen || openPaperId) return
+      event.preventDefault()
+      advance()
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  })
+
   const startBrief = (text: string) => {
     const brief = parseBrief(text)
     const nextMeeting = buildMeeting(brief)
     if (revisionTimer.current) window.clearTimeout(revisionTimer.current)
     if (flashTimer.current) window.clearTimeout(flashTimer.current)
-    setMeeting(nextMeeting)
-    setPapers(buildPapers(brief, readyTimes(nextMeeting)))
-    setClock(0)
+    const now = Date.now()
+    const session: Session = {
+      id: newSessionId(),
+      title: brief.clean,
+      createdAt: now,
+      updatedAt: now,
+      meeting: nextMeeting,
+      papers: buildPapers(brief, readyTimes(nextMeeting)),
+      clock: 0,
+      complete: false,
+    }
+    setSessions((prev) => [session, ...prev].slice(0, MAX_SESSIONS))
+    setActiveId(session.id)
     setSpeed(1)
     setRunning(true)
     setBriefOpen(false)
@@ -91,6 +173,28 @@ export default function App() {
     setPending(null)
     setFlash(null)
     wasRunning.current = false
+  }
+
+  const openSession = (id: string) => {
+    if (id === activeId) return
+    setActiveId(id)
+    setRunning(false)
+    setOpenPaperId(null)
+    setPending(null)
+    setFlash(null)
+    wasRunning.current = false
+  }
+
+  const removeSession = (id: string) => {
+    const rest = sessions.filter((session) => session.id !== id)
+    setSessions(rest)
+    if (id === activeId) {
+      setActiveId(rest[0]?.id ?? null)
+      setRunning(false)
+      setOpenPaperId(null)
+      setPending(null)
+      setFlash(null)
+    }
   }
 
   const openPaperById = (id: string) => {
@@ -112,8 +216,18 @@ export default function App() {
     setPending({ paperId: paper.id, crew })
     if (revisionTimer.current) window.clearTimeout(revisionTimer.current)
     revisionTimer.current = window.setTimeout(() => {
-      setPapers((current) =>
-        current.map((item) => (item.id === paper.id ? revisePaper(item, meeting.brief, crew, instruction) : item)),
+      setSessions((prev) =>
+        prev.map((session) =>
+          session.id === activeId
+            ? {
+                ...session,
+                updatedAt: Date.now(),
+                papers: session.papers.map((item) =>
+                  item.id === paper.id ? revisePaper(item, meeting.brief, crew, instruction) : item,
+                ),
+              }
+            : session,
+        ),
       )
       setPending(null)
       showFlash(
@@ -142,10 +256,31 @@ export default function App() {
         </div>
 
         <div className="hud-actions">
+          <button
+            type="button"
+            className="btn btn-ghost"
+            onClick={() => setRailOpen((value) => !value)}
+            aria-pressed={railOpen}
+            title="Show or hide previous sessions"
+          >
+            SESSIONS{sessions.length ? ` ${sessions.length}` : ''}
+          </button>
           {meeting && !done && (
             <>
               <button type="button" className="btn btn-ghost" onClick={togglePause}>
                 {running ? 'PAUSE' : 'RESUME'}
+              </button>
+              <button
+                type="button"
+                className="btn btn-ghost"
+                onClick={() => setStepMode((value) => !value)}
+                title={
+                  stepMode
+                    ? 'Read-along: the crew waits for Space between lines. Click for auto-play.'
+                    : 'Auto-play: the crew talks on its own. Click to read at your own pace.'
+                }
+              >
+                {stepMode ? 'READ-ALONG' : 'AUTO'}
               </button>
               <button type="button" className="btn btn-ghost" onClick={cycleSpeed}>
                 {speed}×
@@ -154,7 +289,7 @@ export default function App() {
                 type="button"
                 className="btn btn-ghost"
                 onClick={() => {
-                  setClock(meeting.total)
+                  patchActive((session) => ({ ...session, clock: meeting.total, complete: true }))
                   setRunning(false)
                 }}
               >
@@ -168,31 +303,58 @@ export default function App() {
         </div>
       </header>
 
-      <div className="runbar">
-        <span className={`runbar-phase ${running ? 'live' : ''}`}>
-          {meeting ? (done ? 'RUN COMPLETE' : running ? current?.phase ?? 'QUEUED' : 'PAUSED') : 'NO ACTIVE RUN'}
-        </span>
-        <span className="runbar-track" aria-hidden="true">
-          <i style={{ width: `${Math.round(progress * 100)}%` }} />
-        </span>
-        <span className="runbar-count">{ready.length}/6 PAPERS</span>
-      </div>
+      <div className={`workbench ${railOpen ? '' : 'workbench-solo'}`}>
+        {railOpen && (
+          <SessionRail
+            sessions={sessions}
+            activeId={activeId}
+            onOpenSession={openSession}
+            onDelete={removeSession}
+          />
+        )}
 
-      <div className="stage-shell">
-        <Stage
-          meeting={meeting}
-          clock={clock}
-          papers={papers}
-          flash={flash}
-          idleLine={IDLE_LINES[idleIndex % IDLE_LINES.length]}
-          onBoardClick={() => setBriefOpen(true)}
-          onOpenPaper={openPaperById}
-        />
+        <div className="stage-column">
+          <div className="runbar">
+            <span className={`runbar-phase ${running ? 'live' : ''}`}>
+              {meeting ? (done ? 'RUN COMPLETE' : running ? current?.phase ?? 'QUEUED' : 'PAUSED') : 'NO ACTIVE RUN'}
+            </span>
+            <span className="runbar-track" aria-hidden="true">
+              <i style={{ width: `${Math.round(progress * 100)}%` }} />
+            </span>
+            {stepMode && meeting && !done ? (
+              <button
+                type="button"
+                className={`runbar-prompt ${awaitingSpace ? 'runbar-prompt-on' : 'runbar-prompt-idle'}`}
+                onClick={advance}
+                title="Reveal the line and step to the next one (Space)"
+              >
+                {awaitingSpace ? 'SPACE ▸ NEXT' : 'SPACE ▸ REVEAL'}
+              </button>
+            ) : (
+              <span className="runbar-count">{papers.length ? `${ready.length}/${papers.length} PAPERS` : 'AWAITING BRIEF'}</span>
+            )}
+          </div>
+
+          <div className="stage-shell">
+            <Stage
+              meeting={meeting}
+              clock={clock}
+              papers={papers}
+              flash={flash}
+              idleLine={IDLE_LINES[idleIndex % IDLE_LINES.length]}
+              onBoardClick={() => setBriefOpen(true)}
+              onOpenPaper={openPaperById}
+            />
+          </div>
+        </div>
       </div>
 
       <footer className="hud-foot">
         <span className="hint">
-          <b>●</b> CLICK THE WHITEBOARD TO BRIEF · CLICK A PAPER TO INSPECT OR REVISE
+          <b>●</b>{' '}
+          {stepMode && meeting && !done
+            ? 'SPACE TO LET THE CREW CONTINUE · CLICK THE WHITEBOARD TO REBRIEF · CLICK A PAPER TO INSPECT'
+            : 'CLICK THE WHITEBOARD TO BRIEF · CLICK A PAPER TO INSPECT OR REVISE'}
         </span>
         <span className="hint-dim">LOCAL SIMULATION · NO KEYS, NO NETWORK</span>
       </footer>

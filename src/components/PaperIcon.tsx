@@ -3,12 +3,14 @@ import type { CrewId } from '../data/crew'
 import { CREW_BY_ID } from '../data/crew'
 
 const TAGS: Record<CrewId, string> = {
-  sable: 'RECON',
-  chip: 'TOOLS',
-  ines: 'FEAS',
-  milo: 'BUILD',
-  rex: 'RED',
+  sable: 'SRCH',
   vera: 'MEMO',
+  ines: 'ARCH',
+  chip: 'MAC',
+  milo: 'BUILD',
+  rex: 'QA',
+  nia: 'IDEAS',
+  theo: 'WRITE',
 }
 
 interface PaperIconProps {
