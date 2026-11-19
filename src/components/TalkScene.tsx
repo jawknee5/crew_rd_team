@@ -31,6 +31,20 @@ export function TalkScene({ crew, text, typing, thinking, tone }: TalkSceneProps
   const [outgoing, setOutgoing] = useState<CrewId | null>(null)
   const prevRef = useRef<CrewId | null>(crew)
 
+  /* the mouth flips between the closed and open sprite while the line types,
+     then rests closed for the beat's pause */
+  const speaking = !thinking && Boolean(typing)
+  const [mouthOpen, setMouthOpen] = useState(false)
+
+  useEffect(() => {
+    if (!speaking) {
+      setMouthOpen(false)
+      return
+    }
+    const timer = window.setInterval(() => setMouthOpen((open) => !open), 115)
+    return () => window.clearInterval(timer)
+  }, [speaking])
+
   useEffect(() => {
     const previous = prevRef.current
     prevRef.current = crew
@@ -55,7 +69,7 @@ export function TalkScene({ crew, text, typing, thinking, tone }: TalkSceneProps
           </div>
         )}
         <div className={`ff-actor ff-actor-${side} ff-actor-in-${side}`} aria-hidden="true">
-          <PixelSprite crew={crew} />
+          <PixelSprite crew={crew} talk={mouthOpen} />
         </div>
       </div>
 
@@ -63,7 +77,7 @@ export function TalkScene({ crew, text, typing, thinking, tone }: TalkSceneProps
         <div className="ff-body" style={{ ['--accent' as string]: member.accent }}>
           <span className="ff-name">
             {member.name}
-            <em>{member.short}</em>
+            {member.short !== member.name.toUpperCase() && <em>{member.short}</em>}
           </span>
 
           {thinking ? (

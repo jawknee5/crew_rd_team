@@ -3,50 +3,46 @@ import type { CrewId } from '../data/crew'
 import { CREW_BY_ID } from '../data/crew'
 import { hashString, mulberry32, pick } from './brief'
 
+/* ---------------------------------------------------------------------------
+   Every builder below mirrors the agent's declared expected_output, in order,
+   and closes on the Next Best Step. No budget framing, no filler.
+   --------------------------------------------------------------------------- */
+
 function researcherSections(brief: Brief, rand: () => number): PaperSection[] {
   const k1 = brief.keywords[0]
-  const k2 = brief.keywords[1] ?? 'the adjacent material'
+  const k2 = brief.keywords[1] ?? 'the surrounding material'
   return [
     {
-      heading: 'SIGNALS',
+      heading: 'FINDINGS',
       bullets: [
+        `Three primary sources on ${brief.subject} survive a credibility pass: the original ${k1} write-up, its archived revision, and one dataset release. Everything else is derivative.`,
+        `${k1} is well understood at the unit level and poorly documented at the system level. The integration notes are where the real information lives.`,
         pick(rand, [
-          `“${brief.subject}” shows up in three unrelated places: forum archaeology, a vendor changelog nobody reads, and one very confident blog post from 2019.`,
-          `Searching “${brief.subject}” returns a lot of noise and exactly two primary sources. I'd start with the older one.`,
+          `Two independent groups have attempted this publicly. One published partial results; the other published nothing, which tells you where the hard part is.`,
+          `The most useful source is a complaint thread with screenshots, not the paper. The paper describes the ideal case; the thread describes ours.`,
         ]),
-        pick(rand, [
-          `The ${k1} trail is thinner than it looks. Thin usually means either nobody has looked, or a lot of people quietly gave up.`,
-          `${k1} has been attempted publicly at least twice. Both attempts stop without a write-up, which is its own kind of evidence.`,
-        ]),
-        `Every serious source on ${k2} is written by someone selling something adjacent. Read the footnotes, not the summary.`,
       ],
     },
     {
-      heading: 'SOURCES TO MINE',
+      heading: 'CITATIONS',
       bullets: [
-        `${k1} release notes and changelogs — dated, and therefore honest.`,
-        `Complaint threads with screenshots. The ones without screenshots are fiction.`,
-        `Two public audits touching ${k2}, plus the archived version of both. Archives don't get quietly edited.`,
+        `Primary — ${k1} reference documentation and changelog, current revision. Confidence: high (dated, maintained, reproducible).`,
+        `Secondary — archived ${k2} field notes and discussion, 2019–2021. Confidence: medium (single author, no dataset attached).`,
+        `Tertiary — vendor benchmark claims about ${k2}. Confidence: low until independently reproduced. Treat as marketing until then.`,
       ],
     },
     {
-      heading: 'DEEP-WEB PASS',
+      heading: 'CONFIDENCE LEVELS',
       bullets: [
-        `Tor sweep on ${k1} surfaced one mirror and one dead index. The mirror is the only place the original table of results still exists.`,
-        `Unorthodox recon: the ${k2} mailing-list archive. Not indexed, not linked, and the most useful thing I found all week.`,
+        `High: definitions, hard constraints, and what ${k1} demonstrably cannot do.`,
+        `Medium: comparative behaviour of ${k2}. The samples are small and the setups differ in ways the authors do not control for.`,
+        `Low / open: the cost of failure, and behaviour outside lab conditions. I would not build a plan on either yet.`,
       ],
     },
     {
-      heading: 'BLIND SPOTS',
+      heading: 'NEXT BEST STEP',
       bullets: [
-        `Nobody has published what a failed ${k1} actually costs, so every estimate we make is optimistic.`,
-        `No first-hand account from the people who would actually use this. That is the gap I'd fill first.`,
-      ],
-    },
-    {
-      heading: 'RESEARCHER NOTE',
-      bullets: [
-        `If we only read the top three results, we will reproduce exactly what already exists. I'd rather start at page four.`,
+        `Read the ${k1} integration notes end to end, then spend one hour with someone who has shipped it. That closes the medium-confidence gap faster than another search pass.`,
       ],
     },
   ]
@@ -54,37 +50,38 @@ function researcherSections(brief: Brief, rand: () => number): PaperSection[] {
 
 function analyzerSections(brief: Brief, rand: () => number): PaperSection[] {
   const k1 = brief.keywords[0]
-  const k2 = brief.keywords[1] ?? 'the build'
+  const k2 = brief.keywords[1] ?? 'the comparison'
   return [
     {
-      heading: 'FRAMING',
+      heading: 'FINDINGS',
       bullets: [
-        `Question as written: “${brief.clean}”.`,
-        `Operational version: what is the cheapest test that could change our mind about ${k1}?`,
-      ],
-    },
-    {
-      heading: 'CLAIMS THAT SURVIVE',
-      bullets: [
-        `Recon is thin but sufficient to start. Automating it is cheap. The risky assumption is ${k2}, not the build itself.`,
+        `The evidence supports a narrow claim: ${k1} works for the cases the sources actually measured. It does not support the broad version being pitched.`,
         pick(rand, [
-          `Three of the five claims in the dossier hold up under their own footnotes. The other two are borrowed confidence.`,
-          `Two sources disagree about ${k1}, and the newer one is quoting the older one. That collapses the evidence for the nicer story.`,
+          `Two of the three sources agree on direction and disagree on magnitude by roughly an order of magnitude. That disagreement is itself the finding.`,
+          `Every source that reports a strong effect also reports a small sample. The two facts are not unrelated.`,
         ]),
-        `Methodology check: two sources are self-reported, one is a vendor benchmark, and the only independent number is three years old.`,
+        `The ${k2} comparison is confounded — different baselines, different definitions of success. It cannot carry a decision on its own.`,
       ],
     },
     {
-      heading: 'DECISION',
+      heading: 'METHODOLOGICAL CRITIQUE',
       bullets: [
-        `Run the cheap path first. Build, measure, then decide with numbers instead of taste.`,
-        `Spend one week proving the riskiest assumption. If it holds, the rest is execution.`,
+        `Sampling: n is small and self-selected. Anyone who stayed with ${k1} long enough to report is not a random user.`,
+        `Measurement: success is defined differently in each source. Pick one definition before comparing anything.`,
+        `Missing control: none of them ran the obvious baseline. Without it, the measured effect could be novelty.`,
       ],
     },
     {
-      heading: 'NEXT 3 MOVES',
+      heading: 'CONFIDENCE LEVEL',
       bullets: [
-        `1. Sable locks the source list. 2. Ines breaks the constraint. 3. Rex writes the kill criteria before we get attached.`,
+        `Direction of the effect: moderate confidence. Size of the effect: low confidence.`,
+        `One conclusion survives every critique: the cheap version of ${k1} is worth testing before the expensive version is discussed at all.`,
+      ],
+    },
+    {
+      heading: 'NEXT BEST STEP',
+      bullets: [
+        `Define one success metric and one baseline, then run the smallest test that can fail. Until that exists, every number in this memo is provisional.`,
       ],
     },
   ]
@@ -92,39 +89,42 @@ function analyzerSections(brief: Brief, rand: () => number): PaperSection[] {
 
 function fringeSections(brief: Brief, rand: () => number): PaperSection[] {
   const k1 = brief.keywords[0]
-  const k2 = brief.keywords[1] ?? 'the constraint'
+  const k2 = brief.keywords[1] ?? 'an adjacent field'
   return [
     {
-      heading: 'THE CONSTRAINT EVERYONE ACCEPTED',
+      heading: 'OPTION 1 — BORROW THE MECHANISM',
       bullets: [
-        `Vera marked two flaws. The room will treat them as objections. I am treating them as free design inputs.`,
-        `“${k2}” is only a limit because we agreed to it. Nobody has shown me the rule that says we must.`,
+        `Take the mechanism from ${k2}, not the product. The part that solves our problem is the scheduling trick, and it works unchanged at this scale.`,
+        `Viable: proven elsewhere, no new research, one integration seam. Risk: it arrives with assumptions that do not transfer cleanly.`,
       ],
     },
     {
-      heading: 'CROSS-POLLINATION',
+      heading: 'OPTION 2 — INVERT THE CONSTRAINT',
       bullets: [
-        `Borrowed from stage rigging: build the failure into the set so it holds weight and looks accidental. Same trick, different industry.`,
-        `Borrowed from ambulance dispatch: the cheapest version of ${k1} is a priority queue with a human at the end, not a model.`,
+        `Everyone treats ${k1} as a prerequisite. What if it is an output? Run the process backwards and the expensive step becomes a by-product.`,
         pick(rand, [
-          `Borrowed from seed libraries: give the thing away, keep the catalogue. The catalogue is the moat.`,
-          `Borrowed from salvage diving: the parts are already sunk, someone just has to be willing to go down.`,
+          `Viable: cheap to prototype, roughly one afternoon. Risk: it only holds if input ordering is stable, which nobody has verified.`,
+          `Viable: no new parts, only a reordering. Risk: it fails loudly rather than quietly, which is the point.`,
         ]),
       ],
     },
     {
-      heading: 'FRINGE HYPOTHESES',
+      heading: 'OPTION 3 — SELL THE FAILURE',
       bullets: [
-        `H1 · ${k1} can be inferred from a side-channel we already collect. Cheap to test, embarrassing if true.`,
-        `H2 · The existing tool is wrong on purpose. Test it by asking who profits from the wrongness.`,
-        `H3 · Do the inverse: measure how often ${k1} fails and sell the warning instead of the fix.`,
+        `The failures carry more information than the successes. Package the diagnostic, not the fix: different buyer, same code.`,
+        `Viable: demoable in a week. Risk: the market may not know it has the problem yet.`,
       ],
     },
     {
-      heading: 'TO PROTOTYPE FIRST',
+      heading: 'RECOMMENDED PICK',
       bullets: [
-        `H2 becomes a one-page experiment for Milo. It costs a day, and if it lands we skip six weeks of architecture.`,
-        `Warning: H1 is theoretically possible and practically rude. Flag it to the Equalizer before anyone ships it.`,
+        `Option 2 first. It is the cheapest test of the assumption the entire plan rests on, and it fails loudly. Keep Option 1 as the fallback if the ordering turns out to be unstable.`,
+      ],
+    },
+    {
+      heading: 'NEXT BEST STEP',
+      bullets: [
+        `Spend one afternoon building the inverted prototype with the ${k1} step moved to the end. If it survives real input we have a plan; if it does not, we saved a quarter.`,
       ],
     },
   ]
@@ -134,128 +134,92 @@ function macSections(brief: Brief, rand: () => number): PaperSection[] {
   const k1 = brief.keywords[0]
   return [
     {
-      heading: 'SALVAGE LIST',
+      heading: 'BUILD PLAN',
       bullets: [
-        `RPi 3 in the drawer, buck converter from a dead router, a fan out of the projector, one lunchbox. Everything already owned.`,
+        `One controller, one sensing path, one output. ${k1} runs on the smallest board that has the pins, and nothing is added that is not load-bearing.`,
+        `Sequence: verify the salvaged part, bench-test the signal, then mount. Do not design the enclosure before the signal is clean — that is how projects die.`,
         pick(rand, [
-          `The sensor is the only thing worth buying, and only if the old one in the parts bin is a different protocol.`,
-          `No new vendors. If it needs a purchase order, it needs a better reason.`,
+          `Power: single 5 V rail, one buck converter, 500 mA headroom. If draw exceeds that, cut a feature, not a safety margin.`,
+          `Power: 5 V rail with a 500 mA margin. Anything that needs more gets its own supply, not a bigger fuse.`,
         ]),
       ],
     },
     {
-      heading: 'GPIO PINOUT',
+      heading: 'PARTS LIST',
       bullets: [
-        `GPIO4 · sensor clock (pull-up 10k) · GPIO17 · sensor data · GPIO27 · status LED · GPIO22 · relay enable`,
-        `3V3 to sensor VCC, common ground to the rail. Relay on a separate 5V feed — do not run it off the Pi's regulator.`,
+        `Controller: any RP2040 board already in the drawer — two GPIO for the bus, one for the interrupt line.`,
+        `Sensing: the salvaged module from the dead unit. Confirm its protocol before buying anything new.`,
+        `Support: buck converter, 100 µF capacitor, 10 kΩ pull-ups, printed bracket. New spend: fasteners.`,
       ],
     },
     {
-      heading: 'CIRCUIT',
-      code: `salvaged sensor ── 3V3
-               ├── GND ── common rail
-               ├── CLK ── GPIO4  (10k pull-up)
-               └── DAT ── GPIO17
-
-relay enable ── GPIO22 ── 1k ── NPN base
-relay coil  ── 5V rail, flyback diode across coil
-Pi regulator: NOT used for the relay. Ever.`,
-    },
-    {
-      heading: 'FEASIBILITY',
+      heading: 'FEASIBILITY TRADE-OFFS',
       bullets: [
-        `Honest read: the electronics are a weekend. The enclosure is two weekends and one regretted drill bit.`,
-        `Reverse engineering the sensor protocol is the real risk. If it's proprietary, budget a fortnight and a logic analyser.`,
-        pick(rand, [
-          `Assembly order: power rail → sensor → relay → enclosure. Test each stage before the next, or debug all four at once.`,
-          `This will look like a bomb to anyone who doesn't know what it is. Label it.`,
-        ]),
+        `Salvage saves money and costs calibration time. Budget the time, not the part.`,
+        `If the salvaged module's protocol is closed, the fallback is a cheap replacement — not a reverse-engineering project.`,
+        `No enclosure until the bench build survives a 24-hour run. A pretty case around an unstable signal is a lie with a lid.`,
       ],
     },
     {
-      heading: 'WHAT I DID NOT CHECK',
+      heading: 'NEXT BEST STEP',
       bullets: [
-        `Whether that sensor still works. It has been in the bin for two years and I refuse to be optimistic about it.`,
+        `Power the salvaged module on the bench and confirm its protocol with a logic analyser. Every other line in this plan is conditional on that one reading.`,
       ],
     },
   ]
 }
 
-function engineerSections(brief: Brief): PaperSection[] {
+function engineerSections(brief: Brief, rand: () => number): PaperSection[] {
   const k1 = brief.keywords[0]
-  const k2 = brief.keywords[1] ?? 'confidence'
+  const k2 = brief.keywords[1] ?? 'inbound'
   return [
     {
-      heading: 'CONTRACT',
+      heading: 'ARCHITECTED SOLUTION',
       bullets: [
-        `One interface: collect → normalize → decide → emit. Every script below honours it, so the fringe version and the sane version are swappable.`,
-        `No shared state, no daemons, no heroics. Each script runs standalone and exits with a real status code.`,
-      ],
-    },
-    {
-      heading: 'SCRIPT 1 · FRINGE PROTOTYPE',
-      code: `#!/usr/bin/env python3
-# from Ines' fringe dossier H2 — proof of concept only
-from dataclasses import dataclass
-
-@dataclass(frozen=True)
-class Hit:
-    source: str
-    score: float
-    raw: dict
-
-def infer(items: list[dict]) -> list[Hit]:
-    """side-channel inference: assumes the gap itself is the signal"""
-    gaps = [i for i in items if not i.get("${k2}")]
-    return [Hit("gap", len(gaps) / max(1, len(items)), i) for i in gaps[:5]]`,
-    },
-    {
-      heading: 'SCRIPT 2 · OPTIMAL UNIVERSAL',
-      code: `#!/usr/bin/env python3
-"""contract-complete, platform-neutral"""
-import sys, json
-
-def collect(path: str) -> list[dict]:
-    with open(path) as fh:
-        return [json.loads(line) for line in fh if line.strip()]
-
-def normalize(doc: dict) -> dict | None:
-    if not doc.get("id") or not doc.get("${k2}"):
-        return None
-    return {"id": str(doc["id"]), "value": float(doc["${k2}"])}
-
-def decide(items: list[dict]) -> dict:
-    ranked = sorted(items, key=lambda d: d["value"], reverse=True)
-    return {"pick": ranked[0] if ranked else None, "n": len(ranked)}
-
-if __name__ == "__main__":
-    rows = [r for r in map(normalize, collect(sys.argv[1])) if r]
-    print(json.dumps(decide(rows)))
-    sys.exit(0 if rows else 2)`,
-    },
-    {
-      heading: 'SCRIPT 3–5 · PLATFORM VARIANTS',
-      bullets: [
-        `RPi · same contract, systemd unit, GPIO status LED on run, logrotate off a tmpfs mount.`,
-        `Android · Termux-compatible shell wrapper, no systemd, wake-lock held only for the collect phase.`,
-        `macOS · launchd plist with a ThrottleInterval, Xcode command-line tools only, logs into ~/Library/Logs.`,
-      ],
-    },
-    {
-      heading: 'COMPARATIVE ANALYSIS',
-      bullets: [
-        `Universal is the shipping default. Fringe is 40% cheaper to run and 100% harder to defend in a review.`,
-        pick(mulberry32(hashString(brief.clean + 'milo')), [
-          `RPi wins on cost, Android wins on reach, macOS wins on nobody having to ask IT for anything.`,
-          `Pick the platform by who has to maintain it, not by which benchmark looks nicer.`,
+        `Three components, one contract: a collector (input, retries, backpressure), a pure decision core (${k1} rules, no I/O), and an emitter (idempotent writes).`,
+        `The core is deterministic: same input, same output, no clock, no randomness, no network. That is what makes it testable and auditable.`,
+        pick(rand, [
+          `Failure handling is explicit: retry with jitter, then a dead-letter queue. Nothing silently swallows an error.`,
+          `Every failure has a named path. If a component cannot say what happens when it fails, it is not finished.`,
         ]),
       ],
     },
     {
-      heading: 'DEPLOYMENT',
+      heading: 'SECURITY CONSIDERATIONS',
       bullets: [
-        `README written for the person who inherits this and does not like me. Assumptions listed at the top.`,
-        `Day 1: ugly end-to-end. Day 2: the error paths nobody enjoys. Day 3: the thing we show people.`,
+        `Validate at the boundary, trust nothing inside. ${k2} input is parsed against a schema before it reaches the core.`,
+        `Least privilege: the emitter gets write scope for one destination and nothing else.`,
+        `Secrets come from the environment, never the repository; logs redact payloads and identifiers.`,
+      ],
+    },
+    {
+      heading: 'CORE MODULE',
+      code: `from dataclasses import dataclass
+
+@dataclass(frozen=True)
+class Decision:
+    accept: bool
+    reason: str
+
+def decide(record: dict) -> Decision:
+    if not record.get("id") or not record.get("payload"):
+        return Decision(False, "malformed")
+    if record.get("retries", 0) > 3:
+        return Decision(False, "exhausted")
+    return Decision(True, "ok")`,
+    },
+    {
+      heading: 'TESTS',
+      bullets: [
+        `Unit: the decision core against a table of known-good and known-bad inputs, including the malformed cases QA will find.`,
+        `Integration: collector → core → emitter with a fault injected at each seam. Assert the dead-letter path, not just the happy path.`,
+        `Soak: 24 hours at 2× expected load. Memory flat, no queue growth, no restart.`,
+      ],
+    },
+    {
+      heading: 'NEXT BEST STEP',
+      bullets: [
+        `Write the decision-core table test first. If the rules cannot be expressed as a pure function of one record, the architecture is wrong and it is cheaper to learn that now.`,
       ],
     },
   ]
@@ -263,44 +227,51 @@ if __name__ == "__main__":
 
 function qaSections(brief: Brief, rand: () => number): PaperSection[] {
   const k1 = brief.keywords[0]
-  const k2 = brief.keywords[1] ?? 'the handoff'
+  const k2 = brief.keywords[1] ?? 'input'
   return [
     {
-      heading: 'WHERE IT BREAKS',
+      heading: 'CRITICAL',
       bullets: [
-        `Assumes clean input. ${k1} data is never clean; it arrives with opinions and duplicates.`,
+        `Unbounded queue when ${k1} stalls: memory grows until the process dies. Fix: hard cap plus backpressure.`,
         pick(rand, [
-          `Assumes one owner. Handoffs are where ${k2} goes to die.`,
-          `Assumes the same person is still maintaining this in eighteen months. They will not be.`,
-        ]),
-        `Assumes the budget holds. It won't. Build the cheap path first and the pretty path never.`,
-      ],
-    },
-    {
-      heading: 'STATIC + DYNAMIC PASS',
-      bullets: [
-        `Linter clean, type check clean. One dead branch on the RPi variant, two unbounded reads in the Android wrapper.`,
-        `Hostile input first: empty, doubled, encoded wrong, and one field that is a novel instead of a number.`,
-        `Then the boring test nobody runs: kill it mid-run and start it again. It should not care.`,
-      ],
-    },
-    {
-      heading: 'SECURITY + COMPLEXITY',
-      bullets: [
-        `Security scan: no secrets in source, no eval, one unvalidated path argument in the universal script — patched.`,
-        `Cyclomatic complexity peaks at 7 in decide(). Acceptable, but it will be 12 by the third feature.`,
-        pick(rand, [
-          `Auto-fix branch exists and is tested; it changes two lines and nothing else. Diff before you merge it.`,
-          `Auto-fixed version is in the same dossier. It is a proposal, not a replacement.`,
+          `Retry has no jitter, so a downstream blip becomes a self-inflicted thundering herd. Fix: exponential backoff with jitter and a retry cap.`,
+          `A failed write is acknowledged before it commits. Fix: commit first, acknowledge second, never the reverse.`,
         ]),
       ],
     },
     {
-      heading: 'GO / NO-GO',
+      heading: 'HIGH',
       bullets: [
-        `Go if the cheap path proves out in one pass. No-go if the only path needs new headcount.`,
-        `No-go if the success metric is “it looks finished”. That is not a metric.`,
-        `Pass criteria are written before the test, not after the results.`,
+        `${k2} is parsed with truthiness checks instead of a schema; one malformed field takes down a whole batch. Fix: validate and reject per record.`,
+        `Timestamps are compared as strings in one path. Works until it does not. Fix: parse to UTC and compare instants.`,
+      ],
+    },
+    {
+      heading: 'MEDIUM',
+      bullets: [
+        `The error path logs the payload, which contains identifiers. Fix: redact at the logger, not at each call site.`,
+        `No test exercises the dead-letter path, so the recovery code has never actually run. Fix: one integration test that forces it.`,
+      ],
+    },
+    {
+      heading: 'CONCRETE FIXES',
+      bullets: [
+        `Queue cap at 10k with a 429 on overflow; the caller backs off instead of the process dying.`,
+        `One schema module used by both collector and tests, so validation cannot drift between them.`,
+        `Replace the two string comparisons with a single parsed-timestamp helper.`,
+      ],
+    },
+    {
+      heading: 'VERIFICATION',
+      bullets: [
+        `Write the failing test before each fix. A fix without a failing test first is a guess with a commit message.`,
+        `Load test at 2× with the cap in place: queue depth must plateau, not climb.`,
+      ],
+    },
+    {
+      heading: 'NEXT BEST STEP',
+      bullets: [
+        `Fix the unbounded queue today, with the failing test that proves it. Everything in HIGH can ship in the next pass.`,
       ],
     },
   ]
@@ -308,48 +279,38 @@ function qaSections(brief: Brief, rand: () => number): PaperSection[] {
 
 function suggesterSections(brief: Brief, rand: () => number): PaperSection[] {
   const k1 = brief.keywords[0]
-  const k2 = brief.keywords[1] ?? 'the constraint'
+  const k2 = brief.keywords[1] ?? 'the team'
   return [
     {
-      heading: 'THE OBVIOUS VERSION',
+      heading: 'RANKED FEATURE IDEAS',
       bullets: [
-        `Everyone in the room is converging on one plan for ${k1}. Here is that plan, written plainly so we can argue with it.`,
-        `It is fine. It is also the version our competitors will land on the same week, which is the actual problem.`,
+        `1. ${k1} health check — one screen that answers "is this working right now?" Rationale: every support conversation starts with that question. Impact: high.`,
+        `2. Signed decision-trail export — a bundle a ${k2} can hand to an auditor. Rationale: without it, regulated teams cannot say yes. Impact: high.`,
+        `3. Weekly digest instead of another dashboard. Rationale: the data is only actionable on a cadence. Impact: medium.`,
       ],
     },
     {
-      heading: 'THREE SIDEWAYS OPTIONS',
+      heading: 'RATIONALE',
       bullets: [
-        `01 · Don't build ${k1} — build the check that tells people theirs is broken. Smaller, stranger, easier to sell.`,
-        `02 · Ship it as a weekly report instead of a tool. Same data, no interface, one less thing to maintain.`,
+        `Ranked by (how many people hit it) × (how badly it hurts). Feature 1 wins because every user hits it and the current answer is "ask someone".`,
+        `Feature 2 changes who can adopt this at all, which is worth more than a feature that merely delights existing users.`,
         pick(rand, [
-          `03 · Rent the hard part for a month and spend the saved time on ${k2}. Buy the answer, own the question.`,
-          `03 · Give the whole thing away and charge for the archive. The archive is the part nobody else has.`,
+          `Feature 3 is a retention play, not an acquisition one. Rank it third and treat it accordingly.`,
+          `Feature 3 is cheap because it is a view over data we already store. That is the only reason it made the list.`,
         ]),
       ],
     },
     {
-      heading: 'FEATURES THAT WOULD LEAD',
+      heading: 'IMPACT',
       bullets: [
-        `Diff alerts: tell people what changed since yesterday, not what exists today.`,
-        `A shareable evidence card per decision — the thing people screenshot instead of explaining.`,
-        pick(rand, [
-          `An API that returns the reason alongside the answer. Reasons are the feature nobody ships.`,
-          `An export that another team can drop into their own tooling without asking us for a schema.`,
-        ]),
+        `1: fewer support loops, faster trust. 2: opens a segment currently blocked. 3: retention.`,
+        `None of the three requires a new service. Two are surfaces over data that already exists.`,
       ],
     },
     {
-      heading: 'COMPETITIVE ANGLE',
+      heading: 'NEXT BEST STEP',
       bullets: [
-        `Incumbents sell completeness. We sell the first correct answer in under a minute. Different product, same data.`,
-        `Nobody in this space publishes their failure rate. Publishing ours would be an unfair advantage.`,
-      ],
-    },
-    {
-      heading: 'CHEAP EXPERIMENT',
-      bullets: [
-        `One afternoon, five people, a spreadsheet that pretends to be the product. If nobody asks for it twice, that is your answer.`,
+        `Ship the health check as a single read-only page this week. It is the cheapest way to learn which of the other two actually matters.`,
       ],
     },
   ]
@@ -357,52 +318,43 @@ function suggesterSections(brief: Brief, rand: () => number): PaperSection[] {
 
 function writerSections(brief: Brief, rand: () => number): PaperSection[] {
   const k1 = brief.keywords[0]
-  const k2 = brief.keywords[1] ?? 'the next step'
+  const k2 = brief.keywords[1] ?? 'the open risk'
   return [
     {
-      heading: 'EXECUTIVE SUMMARY',
+      heading: 'POLISHED DELIVERABLE',
       bullets: [
-        `${brief.subject} is worth one week and a small budget, not a quarter and a team.`,
-        `Twelve reports, one recommendation. The case rests on two facts and one assumption; all three are named below.`,
+        `Summary. ${brief.subject} is worth pursuing if the narrow version holds. The evidence supports it; the broad version is still a hypothesis.`,
+        `What we know. ${k1} behaves as documented in controlled conditions. Integration, not capability, is the open risk.`,
+        `What we do not know. Failure cost and behaviour under real ${k2}. Both are cheap to measure and currently unmeasured.`,
+        `Recommendation. Run the smallest test that can fail, with one metric agreed in advance.`,
       ],
     },
     {
-      heading: 'METHODOLOGY',
-      bullets: [
-        `Sources on ${k1} are thin but real, and the useful material is in footnotes. The fringe pass is speculative and labelled as such.`,
-        `QA ran against the build, not against the plan. The legal memo is a draft and says so in its own header.`,
-      ],
+      heading: 'OPTIMIZED PROMPT',
+      code: `You are a senior analyst. Given the notes below on "${brief.subject}",
+produce:
+  1. three findings, each with a confidence level
+  2. the strongest counter-argument to the recommendation
+  3. one Next Best Step
+
+Rules: cite the note for every claim; write "unknown" instead of guessing;
+no more than 250 words; no cost estimates.`,
     },
     {
-      heading: 'WHAT WE KNOW',
+      heading: 'RATIONALE',
       bullets: [
-        `The structure is four parts with one seam. The seam is where the risk lives, and it is testable this week.`,
+        `The report leads with the decision, then the evidence, then the limits. Readers stop after the summary; make the summary carry the weight.`,
+        `The prompt is constrained on purpose: one output shape, explicit uncertainty, a word cap. Constraints are what make two runs comparable.`,
         pick(rand, [
-          `Automation makes the routine pass cheap enough to run daily, which changes how often we can be wrong.`,
-          `Hardware is salvageable, which turns a procurement problem into an afternoon with a soldering iron.`,
+          `I deleted the first paragraph twice. It was context, not information.`,
+          `Every adjective that is not doing work has been removed. The remaining ones are load-bearing.`,
         ]),
-        `Two failure modes will happen. Both are named in the QA section with a cost attached.`,
       ],
     },
     {
-      heading: 'CODE + QA',
+      heading: 'NEXT BEST STEP',
       bullets: [
-        `Five scripts ship: one fringe prototype, one universal, three platform variants. All five pass lint and type check.`,
-        `Auto-fix branch is a proposal. Read the diff, don't merge it blind.`,
-      ],
-    },
-    {
-      heading: 'PROMPT ENGINEERING',
-      bullets: [
-        `Researcher · ask for footnotes and publication dates, not summaries. It stops reporting consensus that doesn't exist.`,
-        `Engineer · specify the contract and the failure behaviour before the language. It stops producing demos.`,
-        `QA · demand pass criteria written first. It stops grading its own homework favourably.`,
-      ],
-    },
-    {
-      heading: 'NEXT STEPS',
-      bullets: [
-        `1. Freeze the source list. 2. Prove the risky assumption with the ugly build. 3. Agree the go/no-go rule in writing before results arrive.`,
+        `Send this one-pager to the person who would have to approve the test. If they cannot decide from it, the writing is not the problem — the recommendation is too vague.`,
       ],
     },
   ]
@@ -410,49 +362,39 @@ function writerSections(brief: Brief, rand: () => number): PaperSection[] {
 
 function campaignSections(brief: Brief, rand: () => number): PaperSection[] {
   const k1 = brief.keywords[0]
+  const k2 = brief.keywords[1] ?? 'the workflow'
   return [
     {
-      heading: 'THE REAL BUYER',
+      heading: 'THE PSYCHOLOGICAL HOOK',
       bullets: [
-        `Not the engineer who wants it. The person two levels up who has to justify the spend to someone who doesn't understand it.`,
-        `Desires: fewer incidents, a number they can repeat in a meeting. Insecurities: being the last team to adopt. Aspirations: being the team that saw it first.`,
+        `The buyer of ${k1} is not buying capability. They are buying the end of a low-grade anxiety: the fear that everyone else already has this handled.`,
+        `The hook is relief, not ambition. Show the moment the anxiety stops, not the feature list that stops it.`,
         pick(rand, [
-          `They have already been burned by something marketed exactly like this. Lead with what it refuses to do.`,
-          `They don't want a platform. They want the thing that stops the 2am call.`,
+          `The ideal customer cannot describe the problem in product language, only in consequences. Use their words, not ours.`,
+          `They have already tried the free version and quietly given up. The pitch is permission to try again, not a first introduction.`,
         ]),
       ],
     },
     {
-      heading: 'MICRO-NICHE',
+      heading: 'CAMPAIGN BLUEPRINT',
       bullets: [
-        `Not “teams using ${k1}”. Narrower: teams of 5–15 who already pay for one tool in this category and hate it.`,
-        `Small enough that we can name every account, loud enough that they all talk to each other.`,
+        `Week 1 — problem recognition: one story from a real ${k2}, no product shot.`,
+        `Week 2 — proof: same workflow with the product, same person, same words, side by side.`,
+        `Week 3 — objection handling: the three reasons people almost did not buy, answered by customers who said them.`,
+        `Week 4 — urgency that is true: a real constraint such as cohort size or a deadline. Never a fake countdown.`,
       ],
     },
     {
-      heading: 'THE HOOK',
+      heading: 'KEY MESSAGE',
       bullets: [
-        `One sentence, and it is not the sentence on the whiteboard: “You already have the data. You just don't trust it.”`,
-        `Everything downstream tests that sentence. If it doesn't, it gets cut — including the logo.`,
+        `"You already know the problem. We make it stop in an afternoon." Short, concrete, no adjectives doing the work.`,
+        `Repeat it verbatim everywhere. Variation is for the evidence, never for the claim.`,
       ],
     },
     {
-      heading: 'CHANNEL PLAN',
+      heading: 'NEXT BEST STEP',
       bullets: [
-        `Guerrilla first: one genuinely useful public report, no gate, released weekly. Distribution is the product for the first month.`,
-        `Then founder-led posts in the two communities this niche actually reads. Not a paid ad in either — yet.`,
-        `Viral loop: every shared evidence card carries the origin. Attribution without a popup.`,
-      ],
-    },
-    {
-      heading: 'CRO + PREDICTION',
-      bullets: [
-        `Landing page: one claim, one proof, one action. The current draft has eleven claims and no proof.`,
-        pick(rand, [
-          `Expect the impulse buy to come from the smaller accounts. Price for them and let the enterprise tier subsidise it.`,
-          `Conversion will be highest on Thursday afternoons. I don't make the rules, I just read the data.`,
-        ]),
-        `Measure: first-repeat rate, not signups. Signups are vanity wearing a suit.`,
+        `Record the week-1 story with one real user before writing any ad copy. If the story does not make someone wince in recognition, the hook is wrong and no amount of targeting will fix it.`,
       ],
     },
   ]
@@ -460,53 +402,46 @@ function campaignSections(brief: Brief, rand: () => number): PaperSection[] {
 
 function stackSections(brief: Brief, rand: () => number): PaperSection[] {
   const k1 = brief.keywords[0]
-  const k2 = brief.keywords[1] ?? 'state'
+  const k2 = brief.keywords[1] ?? 'the decision'
   return [
     {
-      heading: 'ARCHITECTURE VERDICT',
+      heading: 'ARCHITECTURE',
       bullets: [
-        `The proposed design works and will not scale past the first real customer. Two fixes, neither needs a new service.`,
-        `Collapse the seam between ingest and decide. It's the only boundary that carries risk, and it currently carries ${k2}.`,
+        `One service, one database, one queue. ${k1} is a read-heavy path with a write burst: split reads to a cache, keep writes transactional.`,
+        `The seam that matters is the decision boundary. Everything touching ${k2} goes through one module with a typed interface. There is no second path.`,
         pick(rand, [
-          `You do not need a queue yet. You need a lock and an idempotency key. Add the queue when it hurts.`,
-          `The clever part of this plan is load-bearing and undocumented. That is not cleverness, that is a single point of failure.`,
+          `Scale plan: stateless app nodes behind a load balancer; Postgres read replica when p95 crosses 200 ms. No microservices until the team outnumbers the services.`,
+          `Scale plan: vertical first, then one replica, then think. Premature distribution is how small systems become full-time jobs.`,
         ]),
       ],
     },
     {
-      heading: 'STACK',
-      bullets: [
-        `Keep the boring runtime. Postgres, one process, no frontend framework until a screen genuinely needs client state.`,
-        `I removed one dependency and cut 240 lines. The remaining abstraction earns its place.`,
-      ],
-    },
-    {
-      heading: 'IMPLEMENTATION SKETCH',
-      code: `export async function run(brief: Brief, deps: Deps) {
-  const key = idempotency(brief)
-  if (await deps.store.seen(key)) return deps.store.result(key)
+      heading: 'DOCUMENTED CODE',
+      code: `// one seam, typed, no cleverness
+export interface Decision {
+  accept: boolean
+  reason: 'ok' | 'malformed' | 'exhausted'
+}
 
-  const docs = await deps.collector.pull(brief, { limit: 200 })
-  const clean = docs.flatMap(deps.normalize)
-  if (clean.length < docs.length / 2) return deps.review.route(clean, key)
-
-  const decision = deps.decide(clean)
-  await deps.store.commit(key, decision)
-  return decision
+export function decide(input: Input): Decision {
+  if (!input.id || !input.payload) {
+    return { accept: false, reason: 'malformed' }
+  }
+  return { accept: true, reason: 'ok' }
 }`,
     },
     {
-      heading: 'CI/CD + DEPLOY',
+      heading: 'TRADE-OFFS',
       bullets: [
-        `One pipeline: typecheck, test, build, deploy preview, smoke test, promote. No manual steps that can be skipped at 2am.`,
-        `Rollback is a redeploy of the previous image, not a revert commit. Reverts lie about state.`,
+        `Cache buys latency and costs invalidation complexity. Worth it for the read path only, and only with a TTL you can defend in one sentence.`,
+        `One database buys operational sanity and costs horizontal write scale. That is the correct trade at this size.`,
+        `A typed seam buys refactor safety and costs a little ceremony. Non-negotiable.`,
       ],
     },
     {
-      heading: 'SECURITY PASS',
+      heading: 'NEXT BEST STEP',
       bullets: [
-        `SCA scan: zero critical, two medium in transitive deps, both patched. Secrets are read from the environment and never logged.`,
-        `One real finding: the ${k1} endpoint trusts a client-supplied id. That's an ownership check, not a bug — fix it before launch.`,
+        `Implement the seam first and route every caller through it before adding the cache. Caching a bad boundary just makes the bad boundary faster.`,
       ],
     },
   ]
@@ -516,42 +451,43 @@ function legalSections(brief: Brief, rand: () => number): PaperSection[] {
   const k1 = brief.keywords[0]
   return [
     {
-      heading: 'INTAKE — ANSWER THESE FIRST',
+      heading: 'CASE-SPECIFIC STRATEGY',
       bullets: [
-        `Jurisdiction, parties, timeline, evidence in hand, and the outcome you actually want. Without those, everything below is a template.`,
-        `Do not sign anything, do not discuss this in writing, and preserve every message and log from ${k1} as of now.`,
-      ],
-    },
-    {
-      heading: 'PROCEDURAL + CONSTITUTIONAL ISSUES',
-      bullets: [
-        `Question one: was process followed, in order, with a record? Most weak cases fail here, not on the facts.`,
-        `Question two: was authority actually granted, or merely assumed? Ask for the instrument, not the assurance.`,
+        `Intake assumptions to confirm before anything else: jurisdiction, parties, dates, and the outcome actually wanted. Strategy changes completely if any one of those differs.`,
+        `Lead with procedure, not merit. On ${k1}, the strongest position is usually a deadline or notice defect, because it is documented and hard to dispute.`,
         pick(rand, [
-          `Records request is the cheapest lever available. It costs a stamp and it forces a written account.`,
-          `Any search, seizure or demand touching ${k1} needs a lawful basis on the face of the document. Read the face.`,
+          `Build the record in chronological order before drafting anything. A clean timeline wins more matters than a clever argument.`,
+          `Separate what is known from what is assumed, then draft only from the known column. Assumptions are for the intake call, not the filing.`,
         ]),
       ],
     },
     {
-      heading: 'AUTHORITY TO CITE',
+      heading: "DO / DON'T ORDERS",
       bullets: [
-        `Statute first, regulation second, case law third. Anything without a citation is a theory, and I don't file theories.`,
-        `Pull the jurisdiction's own rules — filing deadlines and formatting kill more motions than argument does.`,
+        `DO preserve everything now: emails, messages, voicemails, metadata. Do not "clean up" a thread.`,
+        `DO diarise every deadline and confirm the calculation against the court's own rules, not a secondary summary.`,
+        `DON'T sign anything, agree to a payment plan, or discuss the matter with the other side in writing until the record is assembled.`,
+        `DON'T post about it. Anything public is discoverable and will eventually be quoted back.`,
       ],
     },
     {
-      heading: 'ACCOUNTABILITY CHECK',
+      heading: 'READY-TO-REVIEW FINAL DRAFT',
       bullets: [
-        `Background pass on the agency or counterparty: prior findings, complaints, pattern of conduct. One repeat finding changes the strategy.`,
-        `If the multistate background comes back empty, that is a finding too — it changes who we're arguing with.`,
+        `Draft shape: caption, parties, jurisdictional statement, chronological statement of facts, argument with one heading per issue, prayer for relief, verification.`,
+        `Citations are placeholders until jurisdiction is confirmed. Every one must be checked against the current statute and a live reporter, never a secondary summary.`,
+        `Choose: use this prepared draft as the working document, or write your own and I will review it against the same checklist.`,
       ],
     },
     {
-      heading: 'DRAFT + STANDING ORDER',
+      heading: 'REVIEW NOTICE',
       bullets: [
-        `Draft skeleton attached: caption, statement of facts, argument headings, prayer for relief. Plain text so you can edit it.`,
-        `This is a DRAFT until you approve it. A licensed local attorney should review before any court submission — that has not changed.`,
+        `This is a draft for review, not legal advice and not a filing. A licensed attorney in the relevant jurisdiction must read it before anything is signed or submitted.`,
+      ],
+    },
+    {
+      heading: 'NEXT BEST STEP',
+      bullets: [
+        `Confirm jurisdiction, parties, dates, and desired outcome, then say whether to proceed with this draft or review yours. Everything else waits on those four answers.`,
       ],
     },
   ]
@@ -559,60 +495,118 @@ function legalSections(brief: Brief, rand: () => number): PaperSection[] {
 
 function xortronSections(brief: Brief, rand: () => number): PaperSection[] {
   const k1 = brief.keywords[0]
+  const k2 = brief.keywords[1] ?? 'the moving part'
   return [
     {
-      heading: 'MULTI-ANGLE READ',
+      heading: 'SOLUTION',
       bullets: [
-        `Architecture: sound. Performance: fine at ten users, embarrassing at ten thousand. Security: one real hole, cheap to close.`,
-        `The assumption under ${k1} is that the input is trustworthy. It is not, and nothing downstream survives that.`,
+        `The problem is not ${k1}. It is that ${k2} is treated as a constant. Make it a parameter and the architecture simplifies by half.`,
+        `Deployable shape: one decision function, one adapter per input, one bounded queue. Nothing else earns its place.`,
         pick(rand, [
-          `Feasibility: yes. Elegance: no. Those are different questions and the room keeps answering the first one.`,
-          `I have solved this before in a domain that has nothing to do with yours. The shape is identical.`,
+          `It holds under load because the expensive work is off the request path; it holds under failure because every adapter can return "unknown" without taking the system down.`,
+          `It survives production because the unhappy paths are the same code as the happy path, not a separate story someone wrote at 2 a.m.`,
         ]),
       ],
     },
     {
       heading: 'PRODUCTION CODE',
-      code: `use std::io::Result;
+      code: `from dataclasses import dataclass
 
-pub struct Gate { max_age_ms: u64 }
+@dataclass(frozen=True)
+class Result:
+    ok: bool
+    detail: str
 
-impl Gate {
-    /// drop stale input instead of trusting it
-    pub fn admit(&self, item: &Item) -> bool {
-        item.age_ms() <= self.max_age_ms && item.checksum_valid()
-    }
-}
-
-pub fn run(items: Vec<Item>, gate: &Gate) -> Result<Outcome> {
-    let live: Vec<_> = items.into_iter().filter(|i| gate.admit(i)).collect();
-    Ok(Outcome::from(live))
-}`,
+def solve(record: dict) -> Result:
+    if not record:
+        return Result(False, "empty — the universe's favourite input")
+    return Result(True, "solved; see trade-offs")`,
     },
     {
-      heading: 'TRADE-OFF TABLE',
+      heading: 'WHY IT HOLDS',
       bullets: [
-        `Cheap and correct: one process, no cache, dies at scale. Cheapest to run today.`,
-        `Elegant and slow to build: adds a queue and a schema registry. Six weeks, then boring forever.`,
-        pick(rand, [
-          `The honest answer is the third option, and nobody in this room wanted to hear it: shrink the scope until the failure mode disappears.`,
-          `Every option above is worse than measuring first. Measurement costs a day and ends this argument.`,
-        ]),
+        `The decision function is pure, so it can be tested exhaustively without a database, a clock, or an act of faith.`,
+        `Adapters are the only place that knows about the outside world. Swapping one changes nothing upstream.`,
+      ],
+    },
+    {
+      heading: 'TRADE-OFFS',
+      bullets: [
+        `Latency vs. freshness: async buys throughput and costs staleness. Choose per surface, not per system.`,
+        `Simplicity vs. headroom: one queue is easier to operate; two survive a consumer dying. Start with one and add the second when the pager complains.`,
+        `Redundancy you never exercise is decoration. Test the failover or delete it.`,
       ],
     },
     {
       heading: 'SESSION IDEAS',
       bullets: [
-        `01 · GPU kernel optimisation sprint — bring the hot loop and a profiler, leave with numbers.`,
-        `02 · Bug hunt and security audit — adversarial only, no fixing during the session.`,
-        `03 · Architecture teardown — the room defends the design against me. It has never won outright.`,
+        `A 45-minute failure-injection session: kill each dependency in turn and watch what the system says about it.`,
+        `A schema archaeology session: reconcile every ${k2} version still in the wild.`,
       ],
     },
     {
-      heading: 'HONEST LIMITS',
+      heading: 'NEXT BEST STEP',
       bullets: [
-        `I did not benchmark at your real data volume, because you have not given me the volume. Everything above is a model, not a measurement.`,
-        `The ${k1} integration needs a domain expert for one hour. Without that, my solution is politely wrong.`,
+        `Make ${k2} a parameter, run the failure-injection session, and let the results pick the architecture instead of the architecture picking the results.`,
+      ],
+    },
+  ]
+}
+
+function webcrafterSections(brief: Brief, rand: () => number): PaperSection[] {
+  const k1 = brief.keywords[0]
+  const k2 = brief.keywords[1] ?? 'the intake'
+  return [
+    {
+      heading: 'PLAN — PAGES, STACK, FEATURES',
+      bullets: [
+        `Pages: landing (hero, proof, pricing, FAQ), app shell (dashboard, detail, settings), one legal page. Five routes, no orphan screens.`,
+        `Stack: React + TypeScript + Vite, Tailwind for the system, one small serverless function for ${k1}. Static hosting, no server to babysit.`,
+        `Features: ${k2} intake, a results view with empty/loading/error states, one export. Everything else is a second release.`,
+      ],
+    },
+    {
+      heading: 'CODE — COMPLETE FILES, LABELLED BY PATH',
+      code: `src/main.tsx
+  createRoot(document.getElementById('root')!).render(<App />)
+
+src/App.tsx
+  export default function App() {
+    return (
+      <main className="mx-auto max-w-3xl p-6">
+        <h1 className="text-3xl font-semibold tracking-tight">${brief.subject}</h1>
+        <p className="mt-3 text-neutral-600">One clear sentence about the outcome.</p>
+      </main>
+    )
+  }
+
+index.html
+  <div id="root"></div><script type="module" src="/src/main.tsx"></script>`,
+    },
+    {
+      heading: 'DEPLOY COMMANDS',
+      code: `npm create vite@latest app -- --template react-ts
+cd app && npm install
+npm run build
+npx vercel deploy --prod
+# or: npx wrangler pages deploy dist`,
+    },
+    {
+      heading: 'UI/UX REFIT LIST',
+      bullets: [
+        `HIGH — Hierarchy: one h1 and one primary action per view. Why: users currently scan three competing buttons. Exact change: demote secondary buttons to ghost style, keep one filled.`,
+        `HIGH — Contrast: body text on the tinted panel is below 4.5:1. Why: WCAG AA and readability. Exact change: darken the text token two steps.`,
+        pick(rand, [
+          `MEDIUM — Spacing: section padding is inconsistent (24/32/48). Why: the page reads as assembled. Exact change: one 8px scale, sections at 64.`,
+          `MEDIUM — Responsiveness: the hero grid breaks between 640 and 768px. Why: that is the most common phone-landscape width. Exact change: stack at md, not lg.`,
+        ]),
+        `MEDIUM — States: no empty or error state on the results view. Why: first-run users see nothing and leave. Exact change: add both, with one action each.`,
+      ],
+    },
+    {
+      heading: 'NEXT BEST STEP',
+      bullets: [
+        `Scaffold the Vite app, paste the three files above, and deploy the landing route today. A live URL surfaces the real refit priorities faster than another design pass.`,
       ],
     },
   ]
@@ -631,6 +625,7 @@ const BUILDERS: Record<CrewId, (brief: Brief, rand: () => number) => PaperSectio
   stack: stackSections,
   equalizer: legalSections,
   xortron: xortronSections,
+  wren: webcrafterSections,
 }
 
 const PAPER_ORDER: CrewId[] = [
@@ -646,6 +641,7 @@ const PAPER_ORDER: CrewId[] = [
   'stack',
   'equalizer',
   'xortron',
+  'wren',
 ]
 
 export function buildPapers(brief: Brief, readyTimes: Partial<Record<CrewId, number>>): Paper[] {
@@ -668,18 +664,19 @@ export function buildPapers(brief: Brief, readyTimes: Partial<Record<CrewId, num
 /* ---------------- revisions ---------------- */
 
 const ACK: Record<CrewId, (instruction: string) => string> = {
-  vera: (i) => `Reframed it around “${i}”. The memo now argues one case instead of four.`,
-  sable: (i) => `Went back to the sources for “${i}”. Added what I could actually cite.`,
-  ines: (i) => `Rearranged the fringe hypotheses around “${i}”. One of them is now genuinely unreasonable.`,
-  chip: (i) => `Recut the schematic for “${i}”. Same salvage, different pinout.`,
-  milo: (i) => `Reworked the sheet for “${i}”. Same contract, different order of operations.`,
-  rex: (i) => `Read it again with “${i}” in mind. Found two more ways it breaks.`,
-  nia: (i) => `Reshuffled the options around “${i}”. One of them is now genuinely strange.`,
-  theo: (i) => `Rewrote the report for “${i}”. Cut the first paragraph, as usual, and it reads better.`,
-  catalyst: (i) => `Rewrote the campaign around “${i}”. The hook survives; the channel plan didn't.`,
-  stack: (i) => `Rebuilt the plan for “${i}”. One less service, two fewer lines, same behaviour.`,
+  sable: (i) => `Went back to the primary sources for “${i}”. Added what I can cite and marked what I cannot.`,
+  vera: (i) => `Re-ran the critique around “${i}”. The confidence level changed; the recommendation did too.`,
+  ines: (i) => `Rearranged the options around “${i}”. One of them is now genuinely unreasonable, in a useful way.`,
+  chip: (i) => `Recut the build plan for “${i}”. Same salvage, different order of operations.`,
+  milo: (i) => `Reworked the architecture for “${i}”. Same contract, tighter failure paths.`,
+  rex: (i) => `Read it again with “${i}” in mind. Found two more ways it breaks and one fix that covers both.`,
+  nia: (i) => `Reshuffled the ranked list around “${i}”. One feature moved three places.`,
+  theo: (i) => `Rewrote the deliverable for “${i}”. Cut the first paragraph, as usual, and it reads better.`,
+  catalyst: (i) => `Rebuilt the campaign around “${i}”. The hook survives; the channel plan did not.`,
+  stack: (i) => `Rebuilt the plan for “${i}”. One less service, two fewer lines, identical behaviour.`,
   equalizer: (i) => `Reworked the memo for “${i}”. Still a draft, still needs a licensed local read.`,
   xortron: (i) => `Ran “${i}” through the trade-off table. It changed the recommendation, not the limits.`,
+  wren: (i) => `Refit the build for “${i}”. Updated the files and re-ranked the refit list.`,
 }
 
 function condense(sections: PaperSection[]): PaperSection[] {
@@ -708,10 +705,21 @@ export function revisePaper(
   }))
   const changes: string[] = []
 
-  const isShort = /(short|concise|trim|cut|tight|brief|summar|condense|one page)/.test(t)
+  const wantsStep = /(next best step|next step|what next)/.test(t)
+  /* "Tighten the Next Best Step" names one section: it rewrites that section in
+     place instead of condensing the whole paper and appending a second copy. */
+  const stepRest = wantsStep
+    ? t.replace(/(the\s+)?next best step/g, ' ').replace(/next step/g, ' ').replace(/what next/g, ' ')
+    : ''
+  const stepOnly =
+    wantsStep &&
+    !/(risk|fail|edge|break|fragile|critic|worst|attack|code|script|example|pseudo|implement|snippet|technical|trade|constraint|price|detail|deep|expand|elaborat|evidence|more)/.test(
+      stepRest,
+    )
+  const isShort = !stepOnly && /(short|concise|trim|cut|tight|brief|summar|condense|one page)/.test(t)
   const isRisk = /(risk|fail|edge|break|fragile|critic|worst|attack)/.test(t)
   const isCode = /(code|script|example|pseudo|implement|snippet|technical)/.test(t)
-  const isCost = /(cost|budget|time|schedule|expensive|cheap|price)/.test(t)
+  const isTradeoff = /(cost|budget|time|schedule|constraint|trade|price)/.test(t)
   const isDetail = /(detail|deep|expand|elaborat|evidence|more)/.test(t)
 
   if (isShort) {
@@ -721,56 +729,50 @@ export function revisePaper(
 
   if (isRisk) {
     sections.push({
-      heading: 'FAILURE MODES',
+      heading: 'RISKS & COUNTERMEASURES',
       bullets: [
-        `Bad input on day one. Half of ${k1} will arrive malformed and the other half will arrive twice.`,
-        `A single owner disappears and nobody can rerun the pipeline without them.`,
+        `Bad input on day one. Half of ${k1} will arrive malformed and the other half will arrive twice. Countermeasure: schema validation plus an idempotency key.`,
+        `A single owner disappears and nobody can rerun the pipeline without them. Countermeasure: one documented command, tested by someone else.`,
         pick(rand, [
-          `The budget quietly vanishes, and the cheap path becomes the only path.`,
-          `The demo works and the real workload does not.`,
+          `The measured effect is novelty. Countermeasure: baseline first, then the real run.`,
+          `The demo works and the real workload does not. Countermeasure: load test at 2× before anyone promises a date.`,
         ]),
       ],
     })
-    changes.push(`Added a failure-modes section and marked which two will actually happen.`)
+    changes.push(`Added risks with a countermeasure for each, and marked which two are most likely.`)
   } else if (isCode) {
     sections.push({
-      heading: 'SKETCH',
-      code: `# revision v${version} — ${CREW_BY_ID[crew].short}\ndef run(brief):
-    items = collect("${k1}")
-    clean = [i for i in items if i.valid]
-    if len(clean) < len(items) * 0.5:
-        log.warn("${k2}: too much bad input")
-        return manual_review(clean)
-    return decide(clean)`,
+      heading: `WORKING SKETCH — v${version}`,
+      code: `# ${CREW_BY_ID[crew].short} · revision v${version}\ndef run(brief):\n    items = collect("${k1}")\n    clean = [i for i in items if i.valid]\n    if len(clean) < len(items) * 0.5:\n        log.warn("${k2}: too much bad input")\n        return manual_review(clean)\n    return decide(clean)`,
     })
     changes.push(`Added a runnable-shaped sketch — not production code, but close enough to argue with.`)
-  } else if (isCost) {
+  } else if (isTradeoff) {
     sections.push({
-      heading: 'COST & TIME',
+      heading: 'TRADE-OFFS',
       bullets: [
         `Cheap path: one week, zero purchases, one borrowed tester.`,
-        `The line item most likely to balloon is not software — it is the human review pass on ${k1}.`,
+        `The constraint most likely to bind is not tooling — it is the human review pass on ${k1}.`,
         pick(rand, [
           `If the first pass slips a week, cut scope, not the test.`,
-          `Double the estimate for ${k2} and the plan survives contact with reality.`,
+          `Double the time estimate for ${k2} and the plan survives contact with reality.`,
         ]),
       ],
     })
-    changes.push(`Added rough cost, time, and the one line item that always quietly doubles.`)
+    changes.push(`Added the trade-offs and the one constraint that always quietly binds.`)
   } else if (isDetail) {
     sections.push({
       heading: `DEEP DIVE — ${k1.toUpperCase()}`,
       bullets: [
         `The part everyone skipped: ${k1} only holds up if ${k2} is measured the same way twice.`,
         pick(rand, [
-          `We can go deeper on ${k1} without new data — the existing sources just haven't been read closely.`,
-          `There is a second-order effect here that nobody budgeted for: the review process itself becomes the bottleneck.`,
+          `We can go deeper on ${k1} without new data — the existing sources just have not been read closely.`,
+          `There is a second-order effect here: the review process itself becomes the bottleneck.`,
         ]),
         `Open question worth an hour: what would change our mind, and how cheaply can we find it out?`,
       ],
     })
     changes.push(`Expanded ${k1} with the specifics that were missing and flagged what still needs checking.`)
-  } else if (!isShort) {
+  } else if (!isShort && !wantsStep) {
     sections.push({
       heading: 'ADDENDUM',
       bullets: [
@@ -783,6 +785,22 @@ export function revisePaper(
       ],
     })
     changes.push(`Reworked the document to match the request. Assumptions that need checking are marked.`)
+  }
+
+  if (wantsStep) {
+    const sharpened: PaperSection = {
+      heading: 'NEXT BEST STEP',
+      bullets: [
+        pick(rand, [
+          `Do the smallest version of ${k2} that can produce evidence, this week, and bring the result back to this table.`,
+          `Run ${k1} against one real input before anything else moves, then re-read this paper against what comes back.`,
+        ]),
+      ],
+    }
+    const stepIndex = sections.findIndex((section) => /next best step/i.test(section.heading))
+    if (stepIndex >= 0) sections[stepIndex] = sharpened
+    else sections.push(sharpened)
+    changes.push(`Rewrote the Next Best Step in place — one action, one deadline. No other section changed.`)
   }
 
   sections.push({

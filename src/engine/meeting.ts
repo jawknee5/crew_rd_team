@@ -14,10 +14,10 @@ const CHAR_MS = 22
 const HOLD_MS = 1600
 
 /**
- * Runs the twelve agents in app.py order: researcher → analyzer → madhatter → mac
- * → engineer → qa → suggester → writer → catalyst → stack → equalizer → xortron.
- * The writer holds the report until the last four have reported in, then Vera
- * closes with the decision memo.
+ * Runs the thirteen agents in scoped-out order: researcher → analyzer →
+ * madhatter → mac → engineer → qa → suggester → writer → catalyst → stack →
+ * equalizer → xortron → webcrafter. The writer holds the report until the last
+ * five have reported in, then Vera closes with the decision memo.
  */
 export function buildMeeting(brief: Brief): Meeting {
   const rand = mulberry32(hashString(brief.clean))
@@ -179,7 +179,7 @@ export function buildMeeting(brief: Brief): Meeting {
     text: pick(rand, [
       `I'll hold the report until the last four brief me. Compiling early just means writing it twice.`,
       `Drafting the skeleton now. Summary first, evidence second, and prompts for every agent that touched it.`,
-      `I have everything up to the options deck. Waiting on marketing, stack, legal and Xortron before I commit a first paragraph.`,
+      `I have everything up to the options deck. Waiting on marketing, stack, legal, Xortron and Webcrafter before I commit a first paragraph.`,
     ]),
   })
 
@@ -267,13 +267,34 @@ export function buildMeeting(brief: Brief): Meeting {
     ]),
   })
 
+  /* webcrafter */
+  specs.push({
+    crew: 'wren',
+    phase: 'WEB',
+    text: pick(rand, [
+      `Before we call it done: who opens this on a phone, on hotel wifi, with one thumb? That is the real acceptance test.`,
+      `I'll take the whole thing and make it a site: five routes, real empty states, deploy commands that work on the first try.`,
+      `The interface is the product here. If ${kw(0)} takes three clicks to explain, it isn't finished.`,
+    ]),
+  })
+  specs.push({
+    crew: 'wren',
+    phase: 'WEB',
+    deliver: 'wren',
+    text: pick(rand, [
+      `Site build's up: plan, every file labelled by path, deploy commands, and a prioritised refit list.`,
+      `Build's in. Complete files, no placeholders — paste, run, deploy. The refit list is ranked by impact.`,
+      `That's the site. I fixed the mobile breakpoint and the contrast pass; the rest is on the refit list.`,
+    ]),
+  })
+
   /* writer delivers last */
   specs.push({
     crew: 'theo',
     phase: 'WRITING',
     deliver: 'theo',
     text: pick(rand, [
-      `Report's up: summary, methodology, QA, code sections, legal caveats, next steps — plus optimised prompts per agent.`,
+      `Report's up: summary, methodology, QA, code sections, legal caveats, web build, next steps — plus optimised prompts per agent.`,
       `Draft's on the table. I deleted the first paragraph twice; it's better for it.`,
       `That's the written report. Read the next steps if you only have thirty seconds.`,
     ]),
@@ -293,7 +314,7 @@ export function buildMeeting(brief: Brief): Meeting {
   const closers = [
     `Decision memo's in. If you want it changed, hand it to whoever would argue hardest against it.`,
     `Memo's on the table. Pull any paper apart — revisions go to the agent who'd fight you on it.`,
-    `That's the pass. Twelve papers are up. Click one, pick a reviewer, and make them defend it again.`,
+    `That's the pass. Thirteen papers are up. Click one, pick a reviewer, and make them defend it again.`,
   ]
   specs.push({
     crew: 'vera',

@@ -1,10 +1,11 @@
 import type { CrewId } from '../data/crew'
-import { SPRITES } from '../pixels/sprites'
+import { SPRITES, SPRITES_TALK } from '../pixels/sprites'
 
-export function SpriteRuns({ crew }: { crew: CrewId }) {
+export function SpriteRuns({ crew, talk }: { crew: CrewId; talk?: boolean }) {
+  const sprite = talk ? SPRITES_TALK[crew] : SPRITES[crew]
   return (
     <>
-      {SPRITES[crew].runs.map((run, index) => (
+      {sprite.runs.map((run, index) => (
         <rect key={index} x={run.x} y={run.y} width={run.w} height={1} fill={run.color} />
       ))}
     </>
@@ -29,10 +30,12 @@ export function PixelSprite({
   crew,
   size = 48,
   className,
+  talk,
 }: {
   crew: CrewId
   size?: number
   className?: string
+  talk?: boolean
 }) {
   return (
     <svg
@@ -43,7 +46,7 @@ export function PixelSprite({
       className={className}
       aria-hidden="true"
     >
-      <SpriteRuns crew={crew} />
+      <SpriteRuns crew={crew} talk={talk} />
     </svg>
   )
 }

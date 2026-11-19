@@ -14,14 +14,14 @@ const MODE_DEFAULTS: Record<Mode, string[]> = {
   build: ['the prototype', 'the interface', 'the edge cases', 'the handoff'],
   research: ['the question', 'the sources', 'the gaps', 'the assumptions'],
   diagnose: ['the failure', 'the inputs', 'the timeline', 'the blast radius'],
-  strategy: ['the tradeoffs', 'the budget', 'the timeline', 'the audience'],
+  strategy: ['the trade-offs', 'the constraints', 'the timeline', 'the audience'],
 }
 
 const MODE_LINE: Record<Mode, string> = {
   build: 'It is a build, so we leave this room with something that runs.',
   research: 'It is a recon problem, so primary sources or it did not happen.',
   diagnose: 'Something is broken, which means something is lying. We find it.',
-  strategy: 'It is a decision problem: options, costs, and one recommendation.',
+  strategy: 'It is a decision problem: options, trade-offs, and one recommendation.',
 }
 
 const MODE_LABEL: Record<Mode, string> = {

@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import type { PointerEvent as ReactPointerEvent } from 'react'
 import type { CrewId } from './data/crew'
 import { CREW, CREW_BY_ID } from './data/crew'
 import { parseBrief } from './engine/brief'
@@ -10,39 +11,56 @@ import { BriefModal } from './components/BriefModal'
 import { DocPanel } from './components/DocPanel'
 import { SessionRail } from './components/SessionRail'
 import { PixelSprite } from './components/PixelSprite'
+import { PartyScreen } from './components/PartyScreen'
+import { LairScreen } from './components/LairScreen'
+import { DEFAULT_TOOL_IDS, TOOLS } from './data/tools'
+import type { LoadoutBook } from './loadouts'
+import { STANDBY_KEY, enabledTools, loadBook, saveBook } from './loadouts'
 import type { Session } from './sessions'
 import { MAX_SESSIONS, loadSessions, newSessionId, saveSessions } from './sessions'
 
 const IDLE_LINES: IdleLine[] = [
-  { crew: 'vera', text: 'Board is blank. Click it and tell us what to research, build, or break.' },
-  { crew: 'sable', text: 'Give me any topic and I will find the 2014 forum thread where someone already tried it.' },
-  { crew: 'milo', text: 'Three scripts half-finished and no brief. Typical Tuesday.' },
-  { crew: 'ines', text: 'I can prototype almost anything. The word "almost" is doing real work there.' },
-  { crew: 'catalyst', text: 'Give me a product and I will find the person who cannot sleep without it.' },
-  { crew: 'xortron', text: 'Four solutions ready. Three are wrong and I know exactly why.' },
-  { crew: 'equalizer', text: 'Whatever you are about to sign, don\'t.' },
-  { crew: 'rex', text: 'I already do not believe the plan we have not been given yet.' },
-  { crew: 'chip', text: 'Standing by. Idle cycles are being logged, for no reason at all.' },
+  { crew: 'stack', text: 'Relax. I have a great idea for a game. I just need to remember which napkin I drew it on.' },
+  { crew: 'milo', text: "Dave, the build was due at nine and you're playing a racing game from 1983. I've written down everything that's about to go wrong." },
+  { crew: 'catalyst', text: "I don't know what a renderer is, but I know it's costing me money. Somebody in this room had better make me money." },
+  { crew: 'nia', text: 'I have mapped the whole office as a dungeon. The break room is a save point. Clare is a boss fight.' },
+  { crew: 'vera', text: "Whoever wrote 'just ship it' in the commit log, I have found seventeen reasons why we shouldn't." },
+  { crew: 'wren', text: "I'm not saying I run this office, but nothing gets past my desk and nothing gets fixed without me." },
+  { crew: 'equalizer', text: 'I do the books. I also do the shooting. Ask me which one I enjoy more.' },
+  { crew: 'rex', text: "Dad says I'm in charge now. So, uh... everybody keep doing the thing. Great meeting." },
+  { crew: 'chip', text: "I beat the whole game at lunch. It isn't out yet. You're welcome." },
+  { crew: 'ines', text: 'The soundtrack is the only thing holding this company together, and I have not slept since Tuesday.' },
+  { crew: 'sable', text: 'Give me a topic and I will find the 2014 forum thread where a man named Darren tried it, failed, and closed the thread.' },
+  { crew: 'theo', text: 'Six pages of argument, one page a stranger can act on. That is the whole job, and nobody wants to hear it.' },
+  { crew: 'xortron', text: 'I have four solutions ready. Three are wrong. I know exactly which three, and I am not telling you yet.' },
 ]
 
 const CLOCK_TICK = 90
+const IDLE_CHAR_MS = 34
+const IDLE_HOLD_MS = 2400
 
 export default function App() {
   const [sessions, setSessions] = useState<Session[]>(() => loadSessions())
   const [activeId, setActiveId] = useState<string | null>(sessions[0]?.id ?? null)
   const [running, setRunning] = useState(false)
   const [speed, setSpeed] = useState(1)
-  const [stepMode, setStepMode] = useState(true)
   const [railOpen, setRailOpen] = useState(true)
   const [briefOpen, setBriefOpen] = useState(false)
   const [openPaperId, setOpenPaperId] = useState<string | null>(null)
   const [pending, setPending] = useState<{ paperId: string; crew: CrewId } | null>(null)
   const [flash, setFlash] = useState<{ crew: CrewId; text: string } | null>(null)
   const [idleIndex, setIdleIndex] = useState(0)
+  const [idleClock, setIdleClock] = useState(0)
+  const [view, setView] = useState<'party' | 'boardroom' | 'lair'>('party')
+  const [lairCrew, setLairCrew] = useState<CrewId | null>(null)
+  const [veil, setVeil] = useState(false)
+  const [loadouts, setLoadouts] = useState<LoadoutBook>(() => loadBook())
 
   const wasRunning = useRef(false)
   const flashTimer = useRef<number | null>(null)
   const revisionTimer = useRef<number | null>(null)
+  const veilTimer = useRef<number | null>(null)
+  const returnView = useRef<'party' | 'boardroom'>('party')
 
   const active = sessions.find((session) => session.id === activeId) ?? null
   const meeting = active?.meeting ?? null
@@ -55,8 +73,11 @@ export default function App() {
   const progress = meeting ? progressAt(meeting, clock) : 0
   const openPaper = papers.find((paper) => paper.id === openPaperId) ?? null
   const currentEnd = meeting && current ? Math.min(lineEnd(meeting, current), meeting.total) : 0
-  const awaitingSpace = Boolean(stepMode && meeting && current && !done && clock >= currentEnd)
-  const atBeatStart = Boolean(stepMode && meeting && current && !done && clock <= current.start)
+  const awaitingStep = Boolean(meeting && current && !done && clock >= currentEnd)
+  const atBeatStart = Boolean(meeting && current && !done && clock <= current.start)
+  const sessionKey = activeId ?? STANDBY_KEY
+  const loadout = loadouts[sessionKey] ?? {}
+  const sessionTools = (crew: CrewId) => enabledTools(loadouts, sessionKey, crew)
 
   const patchActive = (patch: (session: Session) => Session) => {
     setSessions((prev) => prev.map((session) => (session.id === activeId ? patch(session) : session)))
@@ -71,14 +92,16 @@ export default function App() {
         if (index < 0) return prev
         const session = prev[index]
         if (!session.meeting) return prev
-        let next = Math.min(session.meeting.total, session.clock + CLOCK_TICK * speed)
-        if (stepMode) {
-          const beat = beatAt(session.meeting, session.clock)
-          if (!beat) return prev
-          /* read-along: a fresh line never starts until the user presses Space */
-          if (session.clock <= beat.start) return prev
-          next = Math.min(next, lineEnd(session.meeting, beat))
-        }
+        const beat = beatAt(session.meeting, session.clock)
+        if (!beat) return prev
+        /* a line never starts or advances on its own: the clock only types out
+           the line the user has already stepped into */
+        if (session.clock <= beat.start) return prev
+        const next = Math.min(
+          session.meeting.total,
+          session.clock + CLOCK_TICK * speed,
+          lineEnd(session.meeting, beat),
+        )
         if (next === session.clock) return prev
         const copy = prev.slice()
         copy[index] = { ...session, clock: next }
@@ -86,7 +109,7 @@ export default function App() {
       })
     }, CLOCK_TICK)
     return () => window.clearInterval(id)
-  }, [running, speed, stepMode, activeId])
+  }, [running, speed, activeId])
 
   useEffect(() => {
     if (meeting && clock >= meeting.total && running) setRunning(false)
@@ -107,19 +130,95 @@ export default function App() {
     return () => window.removeEventListener('pagehide', flush)
   }, [])
 
-  /* idle chatter */
+  /* lobby chatter: one line types all the way through, holds, then swaps */
+  const idleLine = IDLE_LINES[idleIndex % IDLE_LINES.length]
+  const idleTypeMs = idleLine.text.length * IDLE_CHAR_MS
+  const idleChars = Math.min(idleLine.text.length, Math.floor(idleClock / IDLE_CHAR_MS))
+
   useEffect(() => {
     if (meeting) return
-    const id = window.setInterval(() => setIdleIndex((index) => index + 1), 6400)
+    const id = window.setInterval(() => setIdleClock((ms) => ms + CLOCK_TICK), CLOCK_TICK)
     return () => window.clearInterval(id)
   }, [meeting])
+
+  useEffect(() => {
+    if (meeting) return
+    if (idleClock < idleTypeMs + IDLE_HOLD_MS) return
+    setIdleIndex((index) => index + 1)
+    setIdleClock(0)
+  }, [idleClock, idleTypeMs, meeting])
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => saveBook(loadouts), 400)
+    return () => window.clearTimeout(timer)
+  }, [loadouts])
 
   useEffect(() => {
     return () => {
       if (flashTimer.current) window.clearTimeout(flashTimer.current)
       if (revisionTimer.current) window.clearTimeout(revisionTimer.current)
+      if (veilTimer.current) window.clearTimeout(veilTimer.current)
     }
   }, [])
+
+  /* the RPG transition: fade to black, swap the screen, fade back in */
+  const fadeTo = (apply: () => void) => {
+    if (veilTimer.current) window.clearTimeout(veilTimer.current)
+    setVeil(true)
+    veilTimer.current = window.setTimeout(() => {
+      apply()
+      setVeil(false)
+    }, 330)
+  }
+
+  const openLair = (crew: CrewId) => {
+    if (view === 'lair') return
+    returnView.current = view === 'boardroom' ? 'boardroom' : 'party'
+    fadeTo(() => {
+      setLairCrew(crew)
+      setView('lair')
+    })
+  }
+
+  const closeLair = () => {
+    fadeTo(() => {
+      setLairCrew(null)
+      setView(returnView.current)
+    })
+  }
+
+  const showParty = () => {
+    if (view === 'party') return
+    setView('party')
+  }
+
+  const showBoardroom = () => setView('boardroom')
+
+  /* a screen change always starts at the top, never halfway down the last one */
+  useEffect(() => {
+    window.scrollTo(0, 0)
+  }, [view, lairCrew])
+
+  const toggleTool = (crew: CrewId, toolId: string) => {
+    setLoadouts((prev) => {
+      const current = enabledTools(prev, sessionKey, crew)
+      const next = current.includes(toolId) ? current.filter((id) => id !== toolId) : [...current, toolId]
+      return { ...prev, [sessionKey]: { ...(prev[sessionKey] ?? {}), [crew]: next } }
+    })
+  }
+
+  const setToolSet = (crew: CrewId, ids: string[]) => {
+    setLoadouts((prev) => ({ ...prev, [sessionKey]: { ...(prev[sessionKey] ?? {}), [crew]: ids } }))
+  }
+
+  useEffect(() => {
+    if (view !== 'lair') return
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') closeLair()
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [view])
 
   const showFlash = (crew: CrewId, text: string) => {
     if (flashTimer.current) window.clearTimeout(flashTimer.current)
@@ -147,23 +246,32 @@ export default function App() {
     if (!running) setRunning(true)
   }
 
-  /* space bar / enter steps the conversation in read-along mode */
+  /* any key press steps the conversation in read-along mode */
   useEffect(() => {
+    const IGNORED = ['Shift', 'Control', 'Alt', 'Meta', 'CapsLock', 'Tab', 'Escape', 'ContextMenu']
     const onKey = (event: KeyboardEvent) => {
-      if (event.key !== ' ' && event.code !== 'Space' && event.key !== 'Spacebar' && event.key !== 'Enter') return
       if (event.repeat || event.metaKey || event.ctrlKey || event.altKey) return
+      if (IGNORED.includes(event.key)) return
       const target = event.target as HTMLElement | null
       if (target) {
         const tag = target.tagName
-        if (tag === 'INPUT' || tag === 'TEXTAREA' || target.isContentEditable) return
+        if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || target.isContentEditable) return
       }
-      if (!stepMode || !meeting || done || briefOpen || openPaperId) return
+      if (view !== 'boardroom' || !meeting || done || briefOpen || openPaperId) return
       event.preventDefault()
       advance()
     }
     window.addEventListener('keydown', onKey, true)
     return () => window.removeEventListener('keydown', onKey, true)
   })
+
+  /* a tap on the room steps too, but papers, the board and the buttons keep their own clicks */
+  const stepFromTap = (event: ReactPointerEvent<HTMLDivElement>) => {
+    const target = event.target as HTMLElement
+    if (target.closest('button, a, input, textarea, select')) return
+    if (!meeting || done || briefOpen || openPaperId) return
+    advance()
+  }
 
   const startBrief = (text: string) => {
     const brief = parseBrief(text)
@@ -182,19 +290,28 @@ export default function App() {
       complete: false,
     }
     setSessions((prev) => [session, ...prev].slice(0, MAX_SESSIONS))
+    /* the new run starts with the loadout currently on the board, so the
+       tools armed before the brief are the tools the meeting uses */
+    setLoadouts((prev) => ({ ...prev, [session.id]: prev[sessionKey] ?? {} }))
     setActiveId(session.id)
-    setSpeed(1)
     setRunning(true)
     setBriefOpen(false)
     setOpenPaperId(null)
     setPending(null)
     setFlash(null)
+    setVeil(false)
+    setLairCrew(null)
+    setView('boardroom')
     wasRunning.current = false
   }
 
   const openSession = (id: string) => {
-    if (id === activeId) return
+    if (id === activeId) {
+      setView('boardroom')
+      return
+    }
     setActiveId(id)
+    setView('boardroom')
     setRunning(false)
     setOpenPaperId(null)
     setPending(null)
@@ -254,6 +371,7 @@ export default function App() {
     }, 1500)
   }
 
+  /* pause only stops the line that is typing; a new line still needs a key or tap */
   const togglePause = () => setRunning((value) => !value)
   const cycleSpeed = () => setSpeed((value) => (value === 1 ? 2 : 1))
 
@@ -272,36 +390,52 @@ export default function App() {
           </div>
         </div>
 
-        <div className="hud-actions">
+        <nav className="rpg-tabs" aria-label="Screens">
           <button
             type="button"
-            className="btn btn-ghost"
-            onClick={() => setRailOpen((value) => !value)}
-            aria-pressed={railOpen}
-            title="Show or hide previous sessions"
+            className={`rpg-tab ${view !== 'boardroom' ? 'rpg-tab-on' : ''}`}
+            onClick={showParty}
           >
-            SESSIONS{sessions.length ? ` ${sessions.length}` : ''}
+            PARTY
           </button>
-          {meeting && !done && (
+          <button
+            type="button"
+            className={`rpg-tab ${view === 'boardroom' ? 'rpg-tab-on' : ''}`}
+            onClick={showBoardroom}
+          >
+            BOARDROOM
+            {meeting && !done && <i className="rpg-tab-dot" aria-hidden="true" />}
+          </button>
+        </nav>
+
+        <div className="hud-actions">
+          {view === 'boardroom' && (
+            <button
+              type="button"
+              className="btn btn-ghost"
+              onClick={() => setRailOpen((value) => !value)}
+              aria-pressed={railOpen}
+              title="Show or hide previous sessions"
+            >
+              SESSIONS{sessions.length ? ` ${sessions.length}` : ''}
+            </button>
+          )}
+          {view === 'boardroom' && meeting && !done && (
             <>
-              {!stepMode && (
-                <button type="button" className="btn btn-ghost" onClick={togglePause}>
-                  {running ? 'PAUSE' : 'RESUME'}
-                </button>
-              )}
               <button
                 type="button"
                 className="btn btn-ghost"
-                onClick={() => setStepMode((value) => !value)}
-                title={
-                  stepMode
-                    ? 'Read-along: the crew waits for Space between lines. Click for auto-play.'
-                    : 'Auto-play: the crew talks on its own. Click to read at your own pace.'
-                }
+                onClick={togglePause}
+                title="Pause the line that is typing. Lines still wait for you either way."
               >
-                {stepMode ? 'READ-ALONG' : 'AUTO'}
+                {running ? 'PAUSE' : 'RESUME'}
               </button>
-              <button type="button" className="btn btn-ghost" onClick={cycleSpeed}>
+              <button
+                type="button"
+                className="btn btn-ghost"
+                onClick={cycleSpeed}
+                title="Typing speed inside the current line. It never starts the next line for you."
+              >
                 {speed}×
               </button>
               <button
@@ -322,6 +456,32 @@ export default function App() {
         </div>
       </header>
 
+      {view === 'party' && (
+        <PartyScreen
+          loadout={loadout}
+          sessionTitle={active?.title ?? 'STANDBY'}
+          hasMeeting={Boolean(meeting)}
+          papersReady={ready.length}
+          papersTotal={papers.length}
+          onOpenCrew={openLair}
+          onBoardroom={showBoardroom}
+          onBrief={() => setBriefOpen(true)}
+        />
+      )}
+
+      {view === 'lair' && lairCrew && (
+        <LairScreen
+          crew={lairCrew}
+          enabled={sessionTools(lairCrew)}
+          sessionTitle={active?.title ?? 'STANDBY LOADOUT'}
+          onToggle={(toolId) => toggleTool(lairCrew, toolId)}
+          onDefaults={() => setToolSet(lairCrew, DEFAULT_TOOL_IDS[lairCrew])}
+          onAll={() => setToolSet(lairCrew, TOOLS[lairCrew].map((tool) => tool.id))}
+          onClose={closeLair}
+        />
+      )}
+
+      {view === 'boardroom' && (
       <div className={`workbench ${railOpen ? '' : 'workbench-solo'}`}>
         {railOpen && (
           <SessionRail
@@ -333,68 +493,80 @@ export default function App() {
         )}
 
         <div className="stage-column">
+          <div className="party-dock" aria-label="Crew quick select">
+            {CREW.map((member) => (
+              <button
+                type="button"
+                key={member.id}
+                className="dock-card"
+                style={{ ['--accent' as string]: member.accent }}
+                onClick={() => openLair(member.id)}
+                title={`Open ${member.name}'s room · ${member.agent}`}
+              >
+                <PixelSprite crew={member.id} size={30} />
+                <span>{member.short}</span>
+              </button>
+            ))}
+          </div>
+
           <div className="runbar">
             <span className={`runbar-phase ${running ? 'live' : ''}`}>
-              {meeting ? (done ? 'RUN COMPLETE' : running ? current?.phase ?? 'QUEUED' : 'PAUSED') : 'NO ACTIVE RUN'}
+              {meeting
+                ? done
+                  ? 'RUN COMPLETE'
+                  : !running
+                    ? 'PAUSED'
+                    : awaitingStep
+                      ? 'WAITING FOR INPUT'
+                      : current?.phase ?? 'QUEUED'
+                : 'NO ACTIVE RUN'}
             </span>
             <span className="runbar-track" aria-hidden="true">
               <i style={{ width: `${Math.round(progress * 100)}%` }} />
             </span>
-            {stepMode && meeting && !done ? (
+            {meeting && !done ? (
               <button
                 type="button"
-                className={`runbar-prompt ${awaitingSpace ? 'runbar-prompt-on' : 'runbar-prompt-idle'}`}
+                className={`runbar-prompt ${awaitingStep ? 'runbar-prompt-on' : 'runbar-prompt-idle'}`}
                 onClick={advance}
-                title="Reveal the line and step to the next one (Space)"
+                title="Reveal the line and step to the next one (any key or tap)"
               >
-                {awaitingSpace ? 'SPACE ▸ NEXT' : atBeatStart ? 'SPACE ▸ START' : 'SPACE ▸ REVEAL'}
+                {awaitingStep ? 'NEXT ▸' : atBeatStart ? 'START ▸' : 'REVEAL ▸'}
               </button>
             ) : (
               <span className="runbar-count">{papers.length ? `${ready.length}/${papers.length} PAPERS` : 'AWAITING BRIEF'}</span>
             )}
           </div>
 
-          <div className="stage-shell">
+          <div className="stage-shell" onPointerDown={stepFromTap}>
             <Stage
               meeting={meeting}
               clock={clock}
               papers={papers}
               flash={flash}
-              idleLine={IDLE_LINES[idleIndex % IDLE_LINES.length]}
+              idleLine={idleLine}
+              idleChars={idleChars}
               onBoardClick={() => setBriefOpen(true)}
               onOpenPaper={openPaperById}
             />
           </div>
         </div>
       </div>
+      )}
 
       <footer className="hud-foot">
         <span className="hint">
           <b>●</b>{' '}
-          {stepMode && meeting && !done
-            ? 'SPACE TO LET THE CREW CONTINUE · CLICK THE WHITEBOARD TO REBRIEF · CLICK A PAPER TO INSPECT'
-            : 'CLICK THE WHITEBOARD TO BRIEF · CLICK A PAPER TO INSPECT OR REVISE'}
+          {view === 'party'
+            ? 'CLICK A CREW CARD TO ENTER THEIR ROOM · BOARDROOM FOR THE LIVE MEETING'
+            : view === 'lair'
+              ? 'TOGGLE ABILITIES TO SET THIS SESSION\u2019S LOADOUT · ESC RETURNS TO THE PARTY'
+              : meeting && !done
+                ? 'ANY KEY OR TAP TO LET THE CREW CONTINUE · CLICK THE WHITEBOARD TO REBRIEF · CLICK A PAPER TO INSPECT'
+                : 'CLICK THE WHITEBOARD TO BRIEF · CLICK A PAPER TO INSPECT OR REVISE'}
         </span>
         <span className="hint-dim">LOCAL SIMULATION · NO KEYS, NO NETWORK</span>
       </footer>
-
-      <section className="roster" aria-label="Crew roster">
-        {CREW.map((member) => (
-          <div
-            key={member.id}
-            className="roster-card"
-            title={`${member.bio}\n\nGOAL: ${member.goal}\nOUTPUT: ${member.expectedOutput}\nMODEL: ${member.model}\nTOOLS: ${member.tools.join(', ')}`}
-          >
-            <PixelSprite crew={member.id} size={40} />
-            <div className="roster-meta">
-              <span className="roster-name">{member.name}</span>
-              <span className="roster-role">{member.role}</span>
-              <span className="roster-specialty">{member.specialty}</span>
-              <span className="roster-model">{member.model}</span>
-            </div>
-          </div>
-        ))}
-      </section>
 
       {briefOpen && (
         <BriefModal
@@ -412,6 +584,8 @@ export default function App() {
           onRequest={requestRevision}
         />
       )}
+
+      <div className={`fade-veil ${veil ? 'fade-veil-on' : ''}`} aria-hidden="true" />
     </div>
   )
 }

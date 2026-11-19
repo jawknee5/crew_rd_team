@@ -2,12 +2,61 @@ import { useEffect, useRef, useState } from 'react'
 import { CREW } from '../data/crew'
 import { PixelSprite } from './PixelSprite'
 
-const EXAMPLES = [
+/**
+ * A deep bench of briefs, shuffled every time the modal opens, on a timer, or
+ * on demand, so the same five prompts never greet the crew twice.
+ */
+const TOPIC_POOL = [
   'Prototype a cheap sensor that detects water leaks behind apartment walls',
   'Investigate why users abandon onboarding on day two',
   'Design a launch plan for a solar-powered backpack',
   'Write a script that scrapes and compares tire prices',
+  'Build a pocket arcade cabinet from a broken Game Boy',
+  'Audit a rental lease for clauses that should not be there',
+  'Plan a 48-hour blackout kit for a city apartment',
+  'Find the cheapest legal way to mail a 40 lb package',
+  'Design a loyalty program for a 1980s video rental shop',
+  'Reverse-engineer the rules of a rigged carnival game',
+  'Build a browser game about an office full of monkeys',
+  'Draft a demand letter for a withheld security deposit',
+  'Find out why the office Wi-Fi dies at 3pm',
+  'Prototype a plant-watering robot with no budget',
+  'Write a cold-email sequence for a one-person consultancy',
+  'Design a menu for a late-night diner with no fryer',
+  "Investigate a competitor's suspiciously familiar logo",
+  'Plan a zero-budget launch video for a card game',
+  'Build a tool that turns meeting notes into tickets',
+  'Test whether a $12 dashcam can work as a security camera',
+  'Design an app for splitting bills without arguing',
+  'Research the true cost of a "free" phone plan',
+  'Write a safety plan for a rooftop garden build',
+  "Audit a small business's website for accessibility",
+  'Find a legal workaround for a broken return window',
+  'Design a pen-and-paper RPG about corporate espionage',
+  'Build a script that finds duplicate photos across drives',
+  'Plan a three-day train trip with two dogs',
+  'Investigate whether the office coffee is actually decaf',
+  'Prototype a silent mechanical keyboard from spare parts',
+  'Draft a simple will checklist for a first-time parent',
+  'Design a Halloween maze for a school gym',
+  'Find the best budget microphone for a true-crime podcast',
+  'Build a dashboard for a youth soccer league',
+  'Write a one-page pitch for a ridiculous but useful app',
+  'Plan a garage sale that actually sells the junk',
+  'Research the legality of recording a public meeting',
+  'Design a repair-café workflow for a community center',
+  'Build a text adventure from a single photograph',
+  'Figure out why the printer only jams on Fridays',
 ]
+
+function pickTopics(count = 4): string[] {
+  const pool = [...TOPIC_POOL]
+  for (let i = pool.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(Math.random() * (i + 1))
+    ;[pool[i], pool[j]] = [pool[j], pool[i]]
+  }
+  return pool.slice(0, count)
+}
 
 interface BriefModalProps {
   initial: string
@@ -17,6 +66,8 @@ interface BriefModalProps {
 
 export function BriefModal({ initial, onClose, onStart }: BriefModalProps) {
   const [text, setText] = useState(initial)
+  const [examples, setExamples] = useState<string[]>(() => pickTopics())
+  const [roll, setRoll] = useState(0)
   const areaRef = useRef<HTMLTextAreaElement>(null)
 
   useEffect(() => {
@@ -26,6 +77,14 @@ export function BriefModal({ initial, onClose, onStart }: BriefModalProps) {
     return () => {
       document.body.style.overflow = original
     }
+  }, [])
+
+  useEffect(() => {
+    const timer = window.setInterval(() => {
+      setExamples(pickTopics())
+      setRoll((value) => value + 1)
+    }, 8000)
+    return () => window.clearInterval(timer)
   }, [])
 
   useEffect(() => {
@@ -61,7 +120,7 @@ export function BriefModal({ initial, onClose, onStart }: BriefModalProps) {
         </div>
 
         <p className="brief-sub">
-          Give the crew a problem. They'll scope it, build on it, break it, and hand back eight papers you can
+          Give the crew a problem. They'll scope it, build on it, break it, and hand back thirteen papers you can
           revise with any agent you like.
         </p>
 
@@ -79,19 +138,35 @@ export function BriefModal({ initial, onClose, onStart }: BriefModalProps) {
         />
 
         <div className="brief-examples">
-          <span>TRY ONE</span>
-          {EXAMPLES.map((example) => (
-            <button type="button" key={example} onClick={() => setText(example)}>
-              {example}
-            </button>
-          ))}
+          <span className="brief-examples-label">
+            TRY ONE
+            <em>ROTATING</em>
+          </span>
+          <div className="brief-topic-row" key={roll}>
+            {examples.map((example) => (
+              <button type="button" key={example} onClick={() => setText(example)}>
+                {example}
+              </button>
+            ))}
+          </div>
+          <button
+            type="button"
+            className="brief-shuffle"
+            onClick={() => {
+              setExamples(pickTopics())
+              setRoll((value) => value + 1)
+            }}
+            title="Shuffle in four new briefs"
+          >
+            ↻ NEW IDEAS
+          </button>
         </div>
 
         <div className="brief-crew">
           {CREW.map((member) => (
-            <div key={member.id} className="brief-crew-card" title={`${member.role} · ${member.specialty}`}>
+            <div key={member.id} className="brief-crew-card" title={`${member.agent} · ${member.description}`}>
               <PixelSprite crew={member.id} size={32} />
-              <span>{member.name.split(' ')[0]}</span>
+              <span>{member.short}</span>
             </div>
           ))}
         </div>

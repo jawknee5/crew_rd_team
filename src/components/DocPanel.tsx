@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react'
 import type { CSSProperties } from 'react'
 import type { CrewId } from '../data/crew'
-import { CREW, CREW_BY_ID } from '../data/crew'
+import { CREW, CREW_BY_ID, PERSONA_LABEL } from '../data/crew'
 import type { Paper } from '../types'
 import { PixelSprite } from './PixelSprite'
 
-const QUICK = ['Make it shorter', 'Add the risks', 'Go deeper on the implementation', 'Include rough costs']
+const QUICK = ['Make it shorter', 'Add the risks', 'Go deeper on the implementation', 'Tighten the Next Best Step']
 
 interface DocPanelProps {
   paper: Paper
@@ -58,16 +58,24 @@ export function DocPanel({ paper, pending, onClose, onRequest }: DocPanelProps) 
             <div>
               <strong>{member.name}</strong>
               <span>
-                {member.role} · {member.specialty}
+                {member.agent} · {member.tone}
               </span>
             </div>
           </div>
 
           <div className="doc-engine">
             <div className="doc-engine-top">
-              <span className="doc-engine-tag">{member.engine}</span>
-              <span className="doc-engine-model">{member.model}</span>
+              <span className="doc-engine-tag">{member.agent}</span>
+              <span className="doc-engine-model">
+                {member.modelProvider}/{member.modelName}
+              </span>
             </div>
+            <p className="doc-engine-line">
+              <b>PERSONA</b> {PERSONA_LABEL[member.persona]} · {member.tone}
+            </p>
+            <p className="doc-engine-line">
+              <b>ROLE</b> {member.role}
+            </p>
             <p className="doc-engine-goal">
               <b>GOAL</b> {member.goal}
             </p>
@@ -75,12 +83,13 @@ export function DocPanel({ paper, pending, onClose, onRequest }: DocPanelProps) 
               <b>OUTPUT</b> {member.expectedOutput}
             </p>
             <p className="doc-engine-line">
-              <b>TASK</b> {member.task}
+              <b>BACKGROUND</b> {member.background}
             </p>
-            <details className="doc-engine-tools">
-              <summary>TOOLS · {member.tools.length}</summary>
-              <p>{member.tools.join(' · ')}</p>
-            </details>
+            {member.skills && (
+              <p className="doc-engine-line">
+                <b>SKILLS</b> {member.skills.join(' · ')}
+              </p>
+            )}
           </div>
 
           <div className="doc-rule" />
@@ -135,7 +144,7 @@ export function DocPanel({ paper, pending, onClose, onRequest }: DocPanelProps) 
                 <PixelSprite crew={option.id} size={34} />
                 <span className="agent-meta">
                   {option.name}
-                  <em>{option.role}</em>
+                  <em>{PERSONA_LABEL[option.persona]}</em>
                 </span>
               </button>
             ))}
@@ -150,7 +159,7 @@ export function DocPanel({ paper, pending, onClose, onRequest }: DocPanelProps) 
             value={instruction}
             maxLength={160}
             disabled={busy}
-            placeholder='e.g. "Make it shorter and add what happens if the budget is cut"'
+            placeholder='e.g. "Make it shorter and add what happens if the data is wrong"'
             onChange={(event) => setInstruction(event.target.value)}
           />
 

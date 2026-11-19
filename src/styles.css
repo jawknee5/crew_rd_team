@@ -541,6 +541,8 @@ button:disabled {
   overflow: hidden;
   font-size: clamp(11px, 1.08vw, 16px);
   isolation: isolate;
+  /* room labels scale with the board itself, so thirteen seats never collide */
+  container-type: inline-size;
 }
 
 .stage-svg {
@@ -975,11 +977,12 @@ button:disabled {
   transform: translateX(-50%);
   display: flex;
   align-items: center;
-  gap: 0.25em;
-  padding: 0.22em 0.34em;
+  gap: 0.2em;
+  padding: 0.18em 0.28em;
   font-family: var(--font-pixel);
-  font-size: 0.38em;
-  letter-spacing: 0.2px;
+  /* thirteen plates share one row: keep each one narrower than a seat */
+  font-size: clamp(2.8px, 0.6cqw, 6px);
+  letter-spacing: 0;
   color: #d3dcea;
   background: #1b2437;
   border: 2px solid #0b0f18;
@@ -2287,4 +2290,76 @@ kbd {
 
 .ff-next {
   bottom: 7px;
+}
+
+/* ---------------- stage split: room above, dialogue band below ---------------- */
+
+.app {
+  max-width: 1440px;
+}
+
+/* taller frame: the room art keeps 536x220 in the top 73.3%, the window
+   gets the remaining band so it never sits on the table */
+.stage {
+  aspect-ratio: 536 / 300;
+}
+
+.scene {
+  position: absolute;
+  inset: 0 0 26.67% 0;
+  overflow: hidden;
+  z-index: 1;
+}
+
+.scene .stage-svg {
+  inset: 0;
+  height: 100%;
+}
+
+.ff-scene {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+}
+
+.ff-actors {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.ff-window {
+  position: relative;
+  inset: auto;
+  flex: 0 0 auto;
+  height: auto;
+  width: 100%;
+  padding: 9px 10px 14px;
+}
+
+.ff-body {
+  overflow: visible;
+  padding: 13px 16px 16px;
+}
+
+.ff-text {
+  font-size: clamp(15px, 1.35vw, 21px);
+  line-height: 1.42;
+}
+
+.ff-name {
+  font-size: 9px;
+}
+
+/* the speaker is sized off the free height above the window, so the head
+   always stays inside the frame */
+.ff-actor {
+  width: auto;
+  height: 96%;
+  max-width: none;
+}
+
+.ff-actor svg {
+  height: 100%;
+  width: auto;
 }
