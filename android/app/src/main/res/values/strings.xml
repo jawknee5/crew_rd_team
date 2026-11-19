@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Crew R&amp;D</string>
+    <string name="title_activity_main">Crew R&amp;D</string>
+    <string name="package_name">com.crewrd.team</string>
+    <string name="custom_url_scheme">com.crewrd.team</string>
+</resources>

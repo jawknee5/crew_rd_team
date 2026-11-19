@@ -9,6 +9,9 @@ const PREVIEW_HOSTNAME = 'pv-eb1e0bd2a9ad-17674492-0aba-4e12-936b-820af12d723e.s
 const previewHost = process.env.PREVIEW_HOST
 
 export default defineConfig({
+  // Relative asset paths let the same build load from file:// in Electron and
+  // from Capacitor's local WebView origin.
+  base: './',
   plugins: [react()],
   server: {
     host: '0.0.0.0',

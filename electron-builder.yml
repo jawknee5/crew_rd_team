@@ -1,0 +1,61 @@
+appId: com.crewrd.team
+productName: Crew R&D
+copyright: Copyright © 2026 Crew R&D
+artifactName: CrewRD-${version}-${os}-${arch}.${ext}
+
+directories:
+  output: release
+
+files:
+  - dist/**/*
+  - electron/**/*
+  - package.json
+  - '!node_modules/**/*'
+
+asar: true
+npmRebuild: false
+afterPack: ./scripts/after-pack.cjs
+
+win:
+  target:
+    - target: nsis
+      arch:
+        - x64
+
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  shortcutName: Crew R&D
+
+mac:
+  target:
+    - target: dmg
+      arch:
+        - x64
+    - target: dmg
+      arch:
+        - arm64
+  category: public.app-category.games
+  identity: null
+
+dmg:
+  title: Crew R&D ${version}
+  iconSize: 128
+  backgroundColor: '#0b0f1a'
+  internetEnabled: false
+
+linux:
+  target:
+    - target: AppImage
+      arch:
+        - arm64
+    - target: deb
+      arch:
+        - arm64
+  category: Game
+  maintainer: Crew R&D
+  synopsis: An 8-bit crew briefing room RPG
+  executableName: crew-rd
+  syncDesktopName: true
