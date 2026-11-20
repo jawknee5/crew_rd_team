@@ -26,7 +26,8 @@ Keep the keystore and passwords somewhere safe: Android only accepts updates sig
 To sign a release build locally, point Gradle at the keystore:
 
 ```sh
+cd android
 ANDROID_KEYSTORE_PATH=/absolute/path/crew-rd-release.keystore \
 ANDROID_KEYSTORE_PASSWORD=... ANDROID_KEY_ALIAS=crew-rd ANDROID_KEY_PASSWORD=... \
-  (cd android && ./gradlew assembleRelease)
+  ./gradlew assembleRelease
 ```
