@@ -17,6 +17,7 @@ npmRebuild: false
 afterPack: ./scripts/after-pack.cjs
 
 win:
+  icon: build/icon.ico
   target:
     - target: nsis
       arch:
@@ -30,6 +31,7 @@ nsis:
   shortcutName: Crew R&D
 
 mac:
+  icon: build/icon.icns
   target:
     - target: dmg
       arch:
@@ -47,6 +49,7 @@ dmg:
   internetEnabled: false
 
 linux:
+  icon: build/icon.png
   target:
     - target: AppImage
       arch:
