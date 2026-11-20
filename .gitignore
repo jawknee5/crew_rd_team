@@ -4,3 +4,7 @@ artifacts/
 release/
 *.local
 .DS_Store
+
+# Android signing material
+*.jks
+*.keystore

@@ -85,12 +85,45 @@ jobs:
       - run: npm run build
       - run: npx cap sync android
       - run: sdkmanager "platforms;android-36" "build-tools;36.0.0" "build-tools;35.0.0"
-      - run: cd android && chmod +x gradlew && ./gradlew assembleDebug --no-daemon
+      - name: Build APK
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          set -euo pipefail
+          chmod +x android/gradlew
+          if [[ "${GITHUB_REF}" == refs/tags/v* ]]; then
+            : "${ANDROID_KEYSTORE_BASE64:?ANDROID_KEYSTORE_BASE64 secret is not set}"
+            : "${ANDROID_KEYSTORE_PASSWORD:?ANDROID_KEYSTORE_PASSWORD secret is not set}"
+            : "${ANDROID_KEY_ALIAS:?ANDROID_KEY_ALIAS secret is not set}"
+            : "${ANDROID_KEY_PASSWORD:?ANDROID_KEY_PASSWORD secret is not set}"
+            KEYSTORE_PATH="${RUNNER_TEMP}/crew-rd-release.keystore"
+            printf '%s' "${ANDROID_KEYSTORE_BASE64}" | base64 --decode > "${KEYSTORE_PATH}"
+            (cd android && ANDROID_KEYSTORE_PATH="${KEYSTORE_PATH}" ./gradlew assembleRelease --no-daemon)
+            echo "APK_PATH=android/app/build/outputs/apk/release/app-release.apk" >> "$GITHUB_ENV"
+            echo "APK_FLAVOR=release" >> "$GITHUB_ENV"
+          else
+            (cd android && ./gradlew assembleDebug --no-daemon)
+            echo "APK_PATH=android/app/build/outputs/apk/debug/app-debug.apk" >> "$GITHUB_ENV"
+            echo "APK_FLAVOR=debug" >> "$GITHUB_ENV"
+          fi
       - name: Name the APK
         run: |
           mkdir -p release
           VERSION=$(node -p "require('./package.json').version")
-          cp android/app/build/outputs/apk/debug/app-debug.apk "release/CrewRD-${VERSION}-android-universal-debug.apk"
+          cp "$APK_PATH" "release/CrewRD-${VERSION}-android-universal-${APK_FLAVOR}.apk"
+      - name: Verify release APK signature
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: |
+          APK="release/CrewRD-$(node -p "require('./package.json').version")-android-universal-release.apk"
+          APKSIGNER=$(find "$ANDROID_HOME/build-tools" -name apksigner -type f | sort -V | tail -n 1)
+          "$APKSIGNER" verify --print-certs "$APK"
+          if "$APKSIGNER" verify --print-certs "$APK" | grep -qi "CN=Android Debug"; then
+            echo "::error::Release APK is signed with the Android debug key"
+            exit 1
+          fi
       - uses: actions/upload-artifact@v4
         with:
           name: crew-rd-android-apk
