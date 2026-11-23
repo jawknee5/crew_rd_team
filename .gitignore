@@ -8,3 +8,4 @@ release/
 # Android signing material
 *.jks
 *.keystore
+/freebuff-sites-build/

@@ -1,12 +1,12 @@
 import type { CrewId } from '../data/crew'
 import { CREW, STAGE_W } from '../data/crew'
+import { crewSprite } from '../pixels/crewSprites'
 import { SpriteRuns } from './PixelSprite'
 
 /**
- * The GameaVision conference room from Code Monkeys: cream wallpaper over a
- * dark wood wainscot, a window full of trees, the blue GAMEAVISION set on its
- * cart, the marked-up wall calendar, the brown office door and - in the corner,
- * because this is GameaVision - the urinal.
+ * The Crew R&D conference room: cream wallpaper over a dark wood wainscot, a
+ * window full of trees, the blue presentation set on its cart, the marked-up
+ * wall calendar, the brown office door and, in the corner, the urinal.
  *
  * The scene is a single flat 536x220 board. Depth comes from stepped pixel
  * shadows, the shallow arc of the chairs and the table painted over the cast,
@@ -165,7 +165,7 @@ function Wall() {
         <rect x="454" y="50" width="9" height="1" fill="#3a2010" />
       </g>
 
-      {/* brass GAMEAVISION plaque, tucked over the door head */}
+      {/* brass CREW R&D plaque, tucked over the door head */}
       <g>
         <rect x="432" y="8" width="80" height="11" fill={INK} />
         <rect x="434" y="9" width="76" height="9" fill="#d9a441" />
@@ -178,7 +178,7 @@ function Wall() {
           fontSize="4.4"
           fontFamily="'Press Start 2P', monospace"
         >
-          GAMEAVISION
+          CREW R&amp;D
         </text>
       </g>
 
@@ -429,14 +429,19 @@ export function RoomFront({ activeCrew }: { activeCrew: CrewId | null }) {
       {CREW.map((member) => {
         const top = SEAT_TOP + arcDrop(member.seat)
         const active = activeCrew === member.id
+        const sprite = crewSprite(member.id)
+        // Full-body sprites are narrower than the old chibi; give them a little
+        // more height in the seats, while Benny stays visibly smaller.
+        const height = member.scale * (member.id === 'chip' ? 0.85 : 1.22)
+        const width = (height * sprite.w) / sprite.h
         return (
           <svg
             key={member.id}
-            x={member.seat - member.scale / 2}
+            x={member.seat - width / 2}
             y={top}
-            width={member.scale}
-            height={member.scale}
-            viewBox="0 0 20 20"
+            width={width}
+            height={height}
+            viewBox={`0 0 ${sprite.w} ${sprite.h}`}
             className={`figure ${active ? 'figure-speaking' : ''}`}
             shapeRendering="crispEdges"
           >

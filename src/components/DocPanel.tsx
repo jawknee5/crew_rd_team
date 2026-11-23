@@ -10,11 +10,12 @@ const QUICK = ['Make it shorter', 'Add the risks', 'Go deeper on the implementat
 interface DocPanelProps {
   paper: Paper
   pending: { paperId: string; crew: CrewId } | null
+  error: string | null
   onClose: () => void
   onRequest: (crew: CrewId, instruction: string) => void
 }
 
-export function DocPanel({ paper, pending, onClose, onRequest }: DocPanelProps) {
+export function DocPanel({ paper, pending, error, onClose, onRequest }: DocPanelProps) {
   const [agent, setAgent] = useState<CrewId>(paper.crew)
   const [instruction, setInstruction] = useState('')
   const member = CREW_BY_ID[paper.crew]
@@ -67,7 +68,8 @@ export function DocPanel({ paper, pending, onClose, onRequest }: DocPanelProps) 
             <div className="doc-engine-top">
               <span className="doc-engine-tag">{member.agent}</span>
               <span className="doc-engine-model">
-                {member.modelProvider}/{member.modelName}
+                {paper.model ?? `${member.modelProvider}/${member.modelName}`}
+                {paper.model ? ' · LIVE' : ''}
               </span>
             </div>
             <p className="doc-engine-line">
@@ -190,6 +192,12 @@ export function DocPanel({ paper, pending, onClose, onRequest }: DocPanelProps) 
           ) : (
             <p className="side-foot">
               The chosen agent appends a new version. The paper on the table updates as soon as they're done.
+            </p>
+          )}
+
+          {error && !pending && (
+            <p className="side-error" role="alert">
+              {error}
             </p>
           )}
         </aside>

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { CREW } from '../data/crew'
+import { fileBadge, formatBytes, isImageFile } from '../attachments'
 import { PixelSprite } from './PixelSprite'
 
 /**
@@ -58,17 +59,58 @@ function pickTopics(count = 4): string[] {
   return pool.slice(0, count)
 }
 
-interface BriefModalProps {
-  initial: string
-  onClose: () => void
-  onStart: (text: string) => void
+/** One staged file: an image thumbnail when the browser can show one, a badge otherwise. */
+function StagedFile({ file, onRemove }: { file: File; onRemove: () => void }) {
+  const [preview, setPreview] = useState<string | null>(null)
+  const image = isImageFile(file.name, file.type)
+
+  useEffect(() => {
+    if (!image) return
+    const url = URL.createObjectURL(file)
+    setPreview(url)
+    return () => URL.revokeObjectURL(url)
+  }, [file, image])
+
+  return (
+    <li className="attach-file">
+      {image && preview ? (
+        <img className="attach-thumb" src={preview} alt="" />
+      ) : (
+        <span className="attach-badge" aria-hidden="true">
+          {fileBadge(file.name, file.type)}
+        </span>
+      )}
+      <span className="attach-file-name">{file.name}</span>
+      <span className="attach-file-size">{formatBytes(file.size)}</span>
+      <button
+        type="button"
+        className="attach-remove"
+        onClick={onRemove}
+        aria-label={`Remove ${file.name}`}
+        title="Remove this file"
+      >
+        X
+      </button>
+    </li>
+  )
 }
 
-export function BriefModal({ initial, onClose, onStart }: BriefModalProps) {
+interface BriefModalProps {
+  initial: string
+  modeLabel: string
+  onClose: () => void
+  onStart: (text: string, files: File[]) => void | Promise<void>
+}
+
+export function BriefModal({ initial, modeLabel, onClose, onStart }: BriefModalProps) {
   const [text, setText] = useState(initial)
+  const [files, setFiles] = useState<File[]>([])
+  const [dragging, setDragging] = useState(false)
+  const [busy, setBusy] = useState(false)
   const [examples, setExamples] = useState<string[]>(() => pickTopics())
   const [roll, setRoll] = useState(0)
   const areaRef = useRef<HTMLTextAreaElement>(null)
+  const fileRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     areaRef.current?.focus()
@@ -80,26 +122,46 @@ export function BriefModal({ initial, onClose, onStart }: BriefModalProps) {
   }, [])
 
   useEffect(() => {
-    const timer = window.setInterval(() => {
-      setExamples(pickTopics())
-      setRoll((value) => value + 1)
-    }, 8000)
-    return () => window.clearInterval(timer)
-  }, [])
-
-  useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
       if (event.key === 'Escape') onClose()
       if (event.key === 'Enter' && (event.metaKey || event.ctrlKey)) {
         const value = text.trim()
-        if (value) onStart(value)
+        if (value && !busy) void onStart(value, files)
       }
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [text, onClose, onStart])
+  }, [text, files, busy, onClose, onStart])
+
+  const addFiles = (incoming: FileList | File[] | null) => {
+    if (!incoming) return
+    const list = Array.from(incoming)
+    if (!list.length) return
+    setFiles((prev) => {
+      const next = [...prev]
+      for (const file of list) {
+        const duplicate = next.some(
+          (item) => item.name === file.name && item.size === file.size && item.lastModified === file.lastModified,
+        )
+        if (!duplicate) next.push(file)
+      }
+      return next
+    })
+  }
+
+  const removeFile = (index: number) => setFiles((prev) => prev.filter((_, i) => i !== index))
 
   const trimmed = text.trim()
+
+  const submit = async () => {
+    if (!trimmed || busy) return
+    setBusy(true)
+    try {
+      await onStart(trimmed, files)
+    } finally {
+      setBusy(false)
+    }
+  }
 
   return (
     <div
@@ -108,7 +170,22 @@ export function BriefModal({ initial, onClose, onStart }: BriefModalProps) {
         if (event.target === event.currentTarget) onClose()
       }}
     >
-      <div className="brief-modal" role="dialog" aria-modal="true" aria-label="Brief the crew">
+      <div
+        className="brief-modal"
+        role="dialog"
+        aria-modal="true"
+        aria-label="Brief the crew"
+        onDragOver={(event) => {
+          event.preventDefault()
+          setDragging(true)
+        }}
+        onDragLeave={() => setDragging(false)}
+        onDrop={(event) => {
+          event.preventDefault()
+          setDragging(false)
+          addFiles(event.dataTransfer.files)
+        }}
+      >
         <div className="brief-head">
           <div>
             <div className="eyebrow">NEW RUN · WHITEBOARD</div>
@@ -121,7 +198,8 @@ export function BriefModal({ initial, onClose, onStart }: BriefModalProps) {
 
         <p className="brief-sub">
           Give the crew a problem. They'll scope it, build on it, break it, and hand back thirteen papers you can
-          revise with any agent you like.
+          revise with any agent you like. Attach reference files when the job needs them — the brief and the files
+          are read together.
         </p>
 
         <label className="sr-only" htmlFor="brief-input">
@@ -137,10 +215,45 @@ export function BriefModal({ initial, onClose, onStart }: BriefModalProps) {
           onChange={(event) => setText(event.target.value)}
         />
 
+        <div className={`brief-attach ${dragging ? 'brief-attach-on' : ''}`}>
+          <input
+            ref={fileRef}
+            className="sr-only"
+            type="file"
+            multiple
+            onChange={(event) => {
+              addFiles(event.target.files)
+              event.target.value = ''
+            }}
+          />
+          <button type="button" className="attach-pick" onClick={() => fileRef.current?.click()}>
+            + ADD FILES
+          </button>
+          <span className="brief-attach-note">
+            OPTIONAL REFERENCE · THE CREW COMBINES THESE WITH YOUR BRIEF · ANY FORMAT
+          </span>
+        </div>
+
+        {files.length > 0 && (
+          <ul className="attach-list">
+            {files.map((file, index) => (
+              <StagedFile
+                key={`${file.name}-${file.size}-${file.lastModified}`}
+                file={file}
+                onRemove={() => removeFile(index)}
+              />
+            ))}
+          </ul>
+        )}
+
+        {files.length > 0 && !trimmed && (
+          <p className="brief-attach-warn">Add a brief line too — the crew reads the files as reference for it.</p>
+        )}
+
         <div className="brief-examples">
           <span className="brief-examples-label">
             TRY ONE
-            <em>ROTATING</em>
+            <em>{examples.length} OF {TOPIC_POOL.length}</em>
           </span>
           <div className="brief-topic-row" key={roll}>
             {examples.map((example) => (
@@ -172,7 +285,10 @@ export function BriefModal({ initial, onClose, onStart }: BriefModalProps) {
         </div>
 
         <div className="brief-foot">
-          <span className="brief-count">{trimmed.length}/280 · CTRL/CMD + ENTER</span>
+          <span className="brief-count">
+            {trimmed.length}/280
+            {files.length ? ` · ${files.length} FILE${files.length === 1 ? '' : 'S'}` : ''} · {modeLabel} · CTRL/CMD + ENTER
+          </span>
           <div className="brief-actions">
             <button type="button" className="btn" onClick={onClose}>
               CANCEL
@@ -180,10 +296,10 @@ export function BriefModal({ initial, onClose, onStart }: BriefModalProps) {
             <button
               type="button"
               className="btn btn-primary"
-              disabled={!trimmed}
-              onClick={() => onStart(trimmed)}
+              disabled={!trimmed || busy}
+              onClick={() => void submit()}
             >
-              BRIEF THE CREW
+              {busy ? 'FILING…' : 'BRIEF THE CREW'}
             </button>
           </div>
         </div>

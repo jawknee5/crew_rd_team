@@ -1,5 +1,5 @@
 /* ==========================================================================
-   CODE MONKEYS — GameaVision 8-bit skin
+   CREW R&D — briefing-room 8-bit skin
    Flat colours, black outlines, mustard walls, CRT glass and a blue text box.
    ========================================================================== */
 
@@ -291,7 +291,7 @@ body {
   background: #000;
 }
 
-/* the whiteboard becomes the GAMEAVISION set on its cart */
+/* the whiteboard becomes the CREW R&D set on its cart */
 .board {
   left: 31%;
   top: 5%;
@@ -533,6 +533,56 @@ body {
   border: 2px solid #1f3fb0;
 }
 
+.brief-attach,
+.attach-file,
+.attach-tray {
+  background: #0b1b3a;
+  border-color: #1f3fb0;
+}
+
+.brief-attach-on {
+  background: #122a56;
+  border-color: #35c6c6;
+}
+
+.attach-pick {
+  color: #07122a;
+  background: #35c6c6;
+}
+
+.brief-attach-note,
+.attach-file-size,
+.attach-tray-label,
+.attach-tray-size {
+  color: #9fc6d8;
+}
+
+.attach-badge {
+  color: #f2d43d;
+  background: #1f2f7a;
+}
+
+.attach-file-name,
+.attach-tray-name {
+  color: #f2e6b0;
+}
+
+.attach-remove,
+.attach-tray-chip {
+  color: #f2e6b0;
+  background: #0b1b3a;
+  border-color: #1f3fb0;
+}
+
+.attach-tray-chip:hover {
+  color: #ffffff;
+  border-color: #35c6c6;
+}
+
+.brief-attach-warn {
+  color: #f2d43d;
+}
+
 .doc-main {
   background: #06122e;
 }
@@ -756,7 +806,7 @@ body {
 
 @media (max-width: 560px) {
   .ff-window {
-    --ff-line: 11px;
+    --ff-line: 13px;
     padding: 5px 7px 6px;
   }
 
@@ -1411,22 +1461,25 @@ body {
   }
 }
 
-/* the speech bubble is head-sized: just smaller than the chibi head shell
-   (12/20 of the sprite wide), sitting directly on the hairline */
+/* a small rounded speech bubble pinned to the actor's head: it moves with the
+   character instead of being parked at an independent percentage of the room */
 .lair-bubble {
   position: absolute;
-  bottom: calc(2.4% + var(--lair-sprite) - 2px);
+  left: 50%;
+  bottom: calc(100% - 1px);
   transform: translateX(-50%);
   display: flex;
   align-items: center;
   justify-content: center;
-  width: calc(var(--lair-sprite) * 0.62);
-  height: calc(var(--lair-sprite) * 0.55);
+  width: clamp(22px, calc(var(--lair-sprite) * 0.42), 34px);
+  height: clamp(20px, calc(var(--lair-sprite) * 0.38), 30px);
   padding: 1px;
   background: #f4eeda;
   border: 2px solid #0b0810;
+  border-radius: 7px;
   box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.6);
   z-index: 6;
+  pointer-events: none;
   animation: bubblePop 200ms steps(4, end) both;
 }
 
@@ -1435,7 +1488,7 @@ body {
   position: absolute;
   bottom: -6px;
   left: 50%;
-  margin-left: -4px;
+  transform: translateX(-50%);
   width: 0;
   height: 0;
   border-left: 4px solid transparent;
@@ -1443,10 +1496,18 @@ body {
   border-top: 6px solid #0b0810;
 }
 
-.lair-bubble.pose-crouch {
-  width: calc(var(--lair-sprite) * 0.54);
-  height: calc(var(--lair-sprite) * 0.48);
-  bottom: calc(1.6% + var(--lair-sprite) * 0.8 - 2px);
+.lair-bubble::before {
+  content: '';
+  position: absolute;
+  bottom: -3px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 0;
+  border-left: 2px solid transparent;
+  border-right: 2px solid transparent;
+  border-top: 3px solid #f4eeda;
+  z-index: 1;
 }
 
 .lair-bubble .lair-icon {
@@ -2238,3 +2299,134 @@ body {
 
 }
 
+
+/* ---------- full-body sprite sizing ---------- */
+/* Keep the old width-based actor sizes; the 16-bit crew is 44x60,
+   so it simply gets taller than the old square sprites. Benny stays smaller. */
+.ff-actor {
+  width: 17%;
+  max-width: 230px;
+  height: auto;
+}
+
+.ff-actor svg {
+  width: 100%;
+  height: auto;
+}
+
+.ff-actor.ff-actor-small {
+  width: 12%;
+  max-width: 165px;
+}
+
+/* Benny keeps the original chibi frame, so keep him smaller in his room. */
+.lair-actor.lair-actor-small {
+  width: calc(var(--lair-sprite) * 0.76);
+}
+
+/* ---------- live model: the same CRT frame ---------- */
+
+.settings-modal,
+.live-panel {
+  background: #07122a;
+  border: 3px solid #f2e6b0;
+  box-shadow:
+    0 0 0 3px #000,
+    12px 12px 0 rgba(0, 0, 0, 0.65);
+}
+
+.settings-head h2,
+.live-head h2 {
+  color: #f2d43d;
+  text-shadow: 2px 2px 0 #000;
+}
+
+.settings-sub,
+.live-note,
+.settings-link {
+  color: #9fc6d8;
+}
+
+.settings-warning {
+  background: #2a1018;
+  border-left-color: #f2d43d;
+}
+
+.settings-warning strong {
+  color: #f2d43d;
+}
+
+.settings-toggle {
+  background: #0b1b3a;
+  border-color: #1f3fb0;
+}
+
+.settings-toggle-on {
+  background: #0a2330;
+  border-color: #35c6c6;
+}
+
+.settings-field > span:first-child {
+  color: #f2d43d;
+}
+
+.settings-toggle strong {
+  color: #f2e6b0;
+}
+
+.live-badge {
+  color: #7ef0c0;
+  background: #0a2330;
+  border-color: #35c6c6;
+}
+
+.live-badge-bad {
+  color: #ffb0a0;
+  background: #2a1018;
+  border-color: #d94a3d;
+}
+
+.live-bar {
+  border-color: #f2e6b0;
+}
+
+.live-bar i {
+  background:
+    repeating-linear-gradient(90deg, rgba(0, 0, 0, 0.2) 0 4px, transparent 4px 8px),
+    linear-gradient(90deg, #35c6c6, #f2d43d);
+}
+
+.live-current {
+  background: #0b1b3a;
+  border-color: #1f3fb0;
+}
+
+.live-step {
+  background: #08152e;
+  border-color: #1f3fb0;
+}
+
+.live-step-running {
+  background: #2a2410;
+  border-color: #f2d43d;
+}
+
+.live-step-done {
+  border-color: #2f8f80;
+}
+
+.live-step-running .live-step-dot,
+.live-step-running .live-step-state {
+  color: #f2d43d;
+}
+
+.live-step-done .live-step-dot,
+.live-step-done .live-step-state {
+  color: #7ef0c0;
+}
+
+.live-note-retry {
+  color: #f2d43d;
+  background: #2a2410;
+  border-left-color: #f2d43d;
+}

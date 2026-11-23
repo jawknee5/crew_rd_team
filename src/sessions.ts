@@ -1,4 +1,4 @@
-import type { Meeting, Paper } from './types'
+import type { Attachment, Meeting, Paper } from './types'
 
 /** A saved briefing-room run: the meeting, its papers, and how far it got. */
 export interface Session {
@@ -8,6 +8,9 @@ export interface Session {
   updatedAt: number
   meeting: Meeting | null
   papers: Paper[]
+  attachments: Attachment[]
+  /** live runs call a model; simulated runs are the local generator */
+  mode?: 'sim' | 'live'
   clock: number
   complete: boolean
 }
@@ -34,7 +37,13 @@ export function loadSessions(): Session[] {
     if (!raw) return []
     const parsed: unknown = JSON.parse(raw)
     if (!Array.isArray(parsed)) return []
-    return parsed.filter(isSession).slice(0, MAX_SESSIONS)
+    return parsed
+      .filter(isSession)
+      .map((session) => ({
+        ...session,
+        attachments: Array.isArray(session.attachments) ? session.attachments : [],
+      }))
+      .slice(0, MAX_SESSIONS)
   } catch {
     return []
   }

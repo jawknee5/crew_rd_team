@@ -62,13 +62,18 @@ export function TalkScene({ crew, text, typing, thinking, tone }: TalkSceneProps
       <div className="ff-actors">
         {outgoing && (
           <div
-            className={`ff-actor ff-actor-${SIDE[outgoing]} ff-actor-out-${SIDE[outgoing]}`}
+            className={`ff-actor ff-actor-${SIDE[outgoing]} ff-actor-out-${SIDE[outgoing]} ${
+              outgoing === 'chip' ? 'ff-actor-small' : ''
+            }`}
             aria-hidden="true"
           >
             <PixelSprite crew={outgoing} />
           </div>
         )}
-        <div className={`ff-actor ff-actor-${side} ff-actor-in-${side}`} aria-hidden="true">
+        <div
+          className={`ff-actor ff-actor-${side} ff-actor-in-${side} ${crew === 'chip' ? 'ff-actor-small' : ''}`}
+          aria-hidden="true"
+        >
           <PixelSprite crew={crew} talk={mouthOpen} />
         </div>
       </div>

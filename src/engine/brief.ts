@@ -1,4 +1,4 @@
-import type { Brief, Mode } from '../types'
+import type { AttachmentContext, Brief, Mode } from '../types'
 
 const STOP = new Set(
   `a an the and or but if then than that this these those to of in on at for with from by as is are was were be been being
@@ -69,7 +69,7 @@ export function detectMode(text: string): Mode {
   return 'research'
 }
 
-export function parseBrief(raw: string): Brief {
+export function parseBrief(raw: string, attachments: AttachmentContext[] = []): Brief {
   const clean = raw.trim().replace(/\s+/g, ' ').replace(/[.!?]+$/, '')
   const subject = clean.length > 66 ? `${clean.slice(0, 63).trim()}…` : clean || 'an unlabelled problem'
   const words = (clean.toLowerCase().match(/[a-z0-9][a-z0-9'’/-]*/g) ?? []).filter(
@@ -95,5 +95,6 @@ export function parseBrief(raw: string): Brief {
     mode,
     modeLabel: MODE_LABEL[mode],
     modeLine: MODE_LINE[mode],
+    attachments,
   }
 }

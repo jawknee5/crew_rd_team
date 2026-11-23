@@ -70,7 +70,7 @@ export function PartyScreen({
               <span className="party-index">No.{String(index + 1).padStart(2, '0')}</span>
               <span className="party-portrait">
                 <i className="party-portrait-glow" aria-hidden="true" />
-                <PixelSprite crew={member.id} size={92} />
+                <PixelSprite crew={member.id} size={member.id === 'chip' ? 76 : 92} />
               </span>
               <span className="party-body">
                 <span className="party-name">{member.name}</span>

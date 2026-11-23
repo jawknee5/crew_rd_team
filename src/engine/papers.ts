@@ -2,6 +2,7 @@ import type { Paper, PaperSection, Brief, RevisionEntry } from '../types'
 import type { CrewId } from '../data/crew'
 import { CREW_BY_ID } from '../data/crew'
 import { hashString, mulberry32, pick } from './brief'
+import { formatBytes } from '../attachments'
 
 /* ---------------------------------------------------------------------------
    Every builder below mirrors the agent's declared expected_output, in order,
@@ -612,6 +613,46 @@ npx vercel deploy --prod
   ]
 }
 
+/* ---------------- attached reference ---------------- */
+
+/** Papers that act on the brief directly quote the attached material they used. */
+const ATTACHMENT_LEADS: Partial<Record<CrewId, string>> = {
+  sable: 'I read the attached reference first, then searched against the brief rather than around it.',
+  vera: 'The attached files join the evidence set and get the same scepticism as any other source.',
+  milo: 'The attached draft is the baseline; the brief decides what the build has to do, and this plan extends the draft.',
+  rex: "I tested the attached material against the brief's acceptance points and logged what it does at the edges.",
+  theo: 'The report cites every attachment by name so a claim can be traced back to the reference that supports it.',
+  stack: 'The attached files are the reference contract for this brief; they shape the implementation without redefining the job.',
+  wren: 'The site build uses the attached files as reference payload for the brief and keeps their structure intact.',
+}
+
+function attachmentSection(brief: Brief, lead: string): PaperSection {
+  const text = brief.attachments.find((attachment) => attachment.excerpt)
+  const list = brief.attachments
+    .map(
+      (attachment) =>
+        `${attachment.name} (${attachment.kind}${attachment.lines ? `, ${attachment.lines} lines` : ''}, ${formatBytes(attachment.size)})`,
+    )
+    .join('; ')
+
+  const bullets = [
+    `Brief: “${brief.subject}”. The attached files are reference for that job, not a separate one.`,
+    `${lead} On the table: ${list}.`,
+    text
+      ? `Quoted verbatim below: the opening of ${text.name}, read alongside the brief rather than as the task itself.`
+      : `No text to quote from the attached material; the crew used it as visual or binary reference alongside the brief, and every file stays named here.`,
+  ]
+  if (brief.attachments.length > 1) {
+    bullets.push('All attachments stay filed with this run; open the boardroom tray to pull one back up.')
+  }
+
+  return {
+    heading: 'REFERENCE CONTEXT',
+    bullets,
+    code: text?.excerpt,
+  }
+}
+
 const BUILDERS: Record<CrewId, (brief: Brief, rand: () => number) => PaperSection[]> = {
   sable: researcherSections,
   vera: analyzerSections,
@@ -648,12 +689,21 @@ export function buildPapers(brief: Brief, readyTimes: Partial<Record<CrewId, num
   return PAPER_ORDER.map((id) => {
     const member = CREW_BY_ID[id]
     const rand = mulberry32(hashString(`${brief.clean}::${id}`))
+    const sections = BUILDERS[id](brief, rand)
+    const lead = ATTACHMENT_LEADS[id]
+    if (lead && brief.attachments.length) {
+      /* keep Next Best Step last: the reference sits right before the action */
+      const stepIndex = sections.findIndex((section) => /next best step/i.test(section.heading))
+      const reference = attachmentSection(brief, lead)
+      if (stepIndex >= 0) sections.splice(stepIndex, 0, reference)
+      else sections.push(reference)
+    }
     return {
       id: `paper-${id}`,
       crew: id,
       kind: member.paperKind,
       subject: brief.clean,
-      sections: BUILDERS[id](brief, rand),
+      sections,
       version: 1,
       revisions: [],
       readyAt: readyTimes[id] ?? 0,

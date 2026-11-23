@@ -42,7 +42,7 @@ export function Whiteboard({
           <i style={{ width: `${Math.round(progress * 100)}%` }} />
         </span>
         <span className="board-status">{phase}</span>
-        <span className="board-brand" aria-hidden="true">GAMEAVISION</span>
+        <span className="board-brand" aria-hidden="true">CREW R&amp;D</span>
       </span>
       <span className="board-tray" aria-hidden="true">
         <i className="marker marker-red" />

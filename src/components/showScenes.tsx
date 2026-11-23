@@ -1,12 +1,12 @@
 import { useEffect, useState, type ReactNode } from 'react'
 import { CREW, CREW_BY_ID, type CrewId } from '../data/crew'
+import { crewSprite } from '../pixels/crewSprites'
 import { BustSprite, SpriteRuns } from './PixelSprite'
 
 /**
- * The four locations from the Code Monkeys reference stills, redrawn flat in
- * the show's 8-bit palette:
+ * The four locations, drawn flat in the briefing-room palette:
  *
- *   Jerry & Dave's shared office  (green wall, twin desks, boombox, G4 feeds)
+ *   Jerry & Dave's shared office  (green wall, twin desks, boombox, wall feeds)
  *   Dean's gym                    (blue wall, green floor, bench, BCX box desk)
  *   Clare's reception lobby       (red double doors, desk, secret floor hatch)
  *   Clarence's secret room        (hot tub, stage, disco ball, VIBE poster)
@@ -26,8 +26,17 @@ function LairFrame({ children }: { children: ReactNode }) {
 }
 
 function Npc({ crew, x, y, size }: { crew: CrewId; x: number; y: number; size: number }) {
+  const sprite = crewSprite(crew)
+  const width = (size * sprite.w) / sprite.h
   return (
-    <svg x={x} y={y} width={size} height={size} viewBox="0 0 20 20" shapeRendering="crispEdges">
+    <svg
+      x={x + (size - width) / 2}
+      y={y}
+      width={width}
+      height={size}
+      viewBox={`0 0 ${sprite.w} ${sprite.h}`}
+      shapeRendering="crispEdges"
+    >
       <SpriteRuns crew={crew} />
     </svg>
   )
@@ -37,7 +46,7 @@ function Npc({ crew, x, y, size }: { crew: CrewId; x: number; y: number; size: n
 /* 1. JERRY & DAVE'S SHARED OFFICE                                     */
 /* ------------------------------------------------------------------ */
 
-function OfficeScreen({ x, y, label = 'G4' }: { x: number; y: number; label?: string }) {
+function OfficeScreen({ x, y, label = 'R&D' }: { x: number; y: number; label?: string }) {
   return (
     <g>
       <rect x={x} y={y} width="56" height="38" fill={INK} />
@@ -89,17 +98,17 @@ export function ShowOffice({ crew }: { crew: 'milo' | 'stack' }) {
         <rect key={`fs-${i}`} x={i * 47 + 10} y={i % 2 ? 152 : 160} width="1" height={i % 2 ? 8 : 7} fill="#2f5f9f" opacity="0.5" />
       ))}
 
-      {/* G4 feed boxes, straight from the show's top-left corner */}
+      {/* wall feed boxes in the office's top-left corner */}
       <g>
         <rect x="12" y="17" width="102" height="24" fill={INK} />
         <rect x="14" y="19" width="98" height="20" fill="#2b2b2b" />
         <rect x="18" y="23" width="9" height="9" fill="#f2f2f2" />
         <rect x="20" y="25" width="5" height="5" fill="#2b2b2b" />
-        <text x="33" y="31" fill="#f4f4f4" fontSize="5.6" fontFamily="'Press Start 2P', monospace">G4TV.COM</text>
+        <text x="33" y="31" fill="#f4f4f4" fontSize="5.6" fontFamily="'Press Start 2P', monospace">CREWNET</text>
         <rect x="14" y="45" width="98" height="20" fill="#2b2b2b" />
         <rect x="18" y="49" width="9" height="9" fill="#f2f2f2" />
         <rect x="20" y="51" width="5" height="5" fill="#2b2b2b" />
-        <text x="33" y="58" fill="#f4f4f4" fontSize="5.6" fontFamily="'Press Start 2P', monospace">G4 PODCAST</text>
+        <text x="33" y="58" fill="#f4f4f4" fontSize="5.6" fontFamily="'Press Start 2P', monospace">CREW PODCAST</text>
       </g>
 
       {/* framed coworker portrait */}
@@ -126,14 +135,14 @@ export function ShowOffice({ crew }: { crew: 'milo' | 'stack' }) {
         <text x="419" y="81" textAnchor="middle" fill="#8a1f2a" fontSize="6" fontFamily="'Press Start 2P', monospace">DAVE</text>
       </g>
 
-      {/* blue G4 plaque */}
+      {/* blue R&D plaque */}
       <g>
         <rect x="212" y="22" width="38" height="50" fill={INK} />
         <rect x="215" y="25" width="32" height="44" fill="#1b2fa0" />
         <rect x="219" y="30" width="24" height="5" fill="#f2d43d" />
         <rect x="219" y="38" width="18" height="3" fill="#35c6c6" />
         <rect x="219" y="44" width="24" height="2" fill="#f4f4f4" opacity="0.6" />
-        <text x="231" y="62" textAnchor="middle" fill="#f4f4f4" fontSize="5" fontFamily="'Press Start 2P', monospace">G4</text>
+        <text x="231" y="62" textAnchor="middle" fill="#f4f4f4" fontSize="5" fontFamily="'Press Start 2P', monospace">R&amp;D</text>
       </g>
 
       {/* wall clock */}
@@ -173,8 +182,8 @@ export function ShowOffice({ crew }: { crew: 'milo' | 'stack' }) {
         <rect x="196" y="146" width="22" height="14" fill="#f4f4f4" stroke={INK} strokeWidth="1" />
         <rect x="199" y="149" width="16" height="2" fill="#8a8a8a" />
         <rect x="199" y="153" width="11" height="2" fill="#8a8a8a" />
-        <OfficeScreen x={78} y={104} label="G4" />
-        <OfficeScreen x={150} y={108} label="G4" />
+        <OfficeScreen x={78} y={104} label="R&D" />
+        <OfficeScreen x={150} y={108} label="R&D" />
         {/* checkered mat */}
         <g transform="rotate(-4 60 138)">
           <rect x="46" y="128" width="30" height="16" fill="#e8e8e8" />
@@ -194,8 +203,8 @@ export function ShowOffice({ crew }: { crew: 'milo' | 'stack' }) {
         <rect x="282" y="186" width="240" height="2" fill="#8a6a3a" opacity="0.6" />
         <rect x="312" y="150" width="26" height="16" fill="#f4ecd4" stroke={INK} strokeWidth="1" transform="rotate(3 312 150)" />
         <rect x="316" y="154" width="16" height="1" fill="#9a8a6a" />
-        <OfficeScreen x={352} y={104} label="G4" />
-        <OfficeScreen x={424} y={110} label="G4" />
+        <OfficeScreen x={352} y={104} label="R&D" />
+        <OfficeScreen x={424} y={110} label="R&D" />
         <g transform="rotate(4 330 142)">
           <rect x="316" y="132" width="28" height="16" fill="#e8e8e8" />
           {Array.from({ length: 3 }, (_, ry) =>
@@ -573,7 +582,7 @@ export function ShowLobby() {
         <rect x="28" y="212" width="28" height="4" fill={INK} />
       </g>
 
-      {/* wall map + bear + WILLY + G4 */}
+      {/* wall map + bear + WILLY + R&D */}
       <g>
         <rect x="16" y="18" width="60" height="46" fill={INK} />
         <rect x="19" y="21" width="54" height="40" fill="#1f3f8a" />
@@ -589,7 +598,7 @@ export function ShowLobby() {
         <text x="526" y="79" textAnchor="middle" fill="#3a2010" fontSize="4" fontFamily="'Press Start 2P', monospace">WILLY</text>
         <rect x="506" y="18" width="26" height="20" fill={INK} />
         <rect x="508" y="20" width="22" height="16" fill="#e8662a" />
-        <text x="519" y="31" textAnchor="middle" fill="#1a1208" fontSize="7" fontFamily="'Press Start 2P', monospace">G4</text>
+        <text x="519" y="31" textAnchor="middle" fill="#1a1208" fontSize="7" fontFamily="'Press Start 2P', monospace">R&amp;D</text>
         <rect x="86" y="30" width="30" height="24" fill={INK} />
         <rect x="89" y="33" width="24" height="18" fill="#f4ecd4" />
         <rect x="93" y="37" width="16" height="1" fill="#9a8a6a" />

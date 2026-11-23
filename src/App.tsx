@@ -2,14 +2,17 @@ import { useEffect, useRef, useState } from 'react'
 import type { PointerEvent as ReactPointerEvent } from 'react'
 import type { CrewId } from './data/crew'
 import { CREW, CREW_BY_ID } from './data/crew'
+import type { ChatterScene } from './data/chatter'
+import { BICKER_SCENES, pickBickerScene } from './data/chatter'
 import { parseBrief } from './engine/brief'
 import { beatAt, buildMeeting, lineEnd, progressAt, readyTimes } from './engine/meeting'
 import { buildPapers, revisePaper } from './engine/papers'
-import type { IdleLine } from './components/Stage'
 import { Stage } from './components/Stage'
 import { BriefModal } from './components/BriefModal'
 import { DocPanel } from './components/DocPanel'
 import { SessionRail } from './components/SessionRail'
+import { DeliverablesVault } from './components/DeliverablesVault'
+import type { ImportOutcome } from './components/DeliverablesVault'
 import { PixelSprite } from './components/PixelSprite'
 import { PartyScreen } from './components/PartyScreen'
 import { LairScreen } from './components/LairScreen'
@@ -18,29 +21,26 @@ import type { LoadoutBook } from './loadouts'
 import { STANDBY_KEY, enabledTools, loadBook, saveBook } from './loadouts'
 import type { Session } from './sessions'
 import { MAX_SESSIONS, loadSessions, newSessionId, saveSessions } from './sessions'
-
-const IDLE_LINES: IdleLine[] = [
-  { crew: 'stack', text: 'Relax. I have a great idea for a game. I just need to remember which napkin I drew it on.' },
-  { crew: 'milo', text: "Dave, the build was due at nine and you're playing a racing game from 1983. I've written down everything that's about to go wrong." },
-  { crew: 'catalyst', text: "I don't know what a renderer is, but I know it's costing me money. Somebody in this room had better make me money." },
-  { crew: 'nia', text: 'I have mapped the whole office as a dungeon. The break room is a save point. Clare is a boss fight.' },
-  { crew: 'vera', text: "Whoever wrote 'just ship it' in the commit log, I have found seventeen reasons why we shouldn't." },
-  { crew: 'wren', text: "I'm not saying I run this office, but nothing gets past my desk and nothing gets fixed without me." },
-  { crew: 'equalizer', text: 'I do the books. I also do the shooting. Ask me which one I enjoy more.' },
-  { crew: 'rex', text: "Dad says I'm in charge now. So, uh... everybody keep doing the thing. Great meeting." },
-  { crew: 'chip', text: "I beat the whole game at lunch. It isn't out yet. You're welcome." },
-  { crew: 'ines', text: 'The soundtrack is the only thing holding this company together, and I have not slept since Tuesday.' },
-  { crew: 'sable', text: 'Give me a topic and I will find the 2014 forum thread where a man named Darren tried it, failed, and closed the thread.' },
-  { crew: 'theo', text: 'Six pages of argument, one page a stranger can act on. That is the whole job, and nobody wants to hear it.' },
-  { crew: 'xortron', text: 'I have four solutions ready. Three are wrong. I know exactly which three, and I am not telling you yet.' },
-]
+import type { Attachment, AttachmentContext, Brief } from './types'
+import { LlmSettings } from './components/LlmSettings'
+import { LiveRunOverlay } from './components/LiveRunOverlay'
+import type { LiveRunView } from './components/LiveRunOverlay'
+import type { LlmConfig } from './llm/config'
+import { isLiveReady, loadLlmConfig, saveLlmConfig } from './llm/config'
+import { LIVE_WORKFLOW } from './data/workflow'
+import { buildLiveRun, reviseLivePaper, runLiveCrew } from './llm/live'
+import type { Deliverable } from './vault/types'
+import { attachFiles, fileBadge, formatBytes, loadAttachment, removeAttachments } from './attachments'
+import { MAX_DELIVERABLES, loadDeliverables, saveDeliverables } from './vault/store'
 
 const CLOCK_TICK = 90
-const IDLE_CHAR_MS = 34
-const IDLE_HOLD_MS = 2400
+const IDLE_CHAR_MS = 52
+const IDLE_HOLD_MS = 6500
 
 export default function App() {
   const [sessions, setSessions] = useState<Session[]>(() => loadSessions())
+  const [deliverables, setDeliverables] = useState<Deliverable[]>(() => loadDeliverables())
+  const [activeDeliverableId, setActiveDeliverableId] = useState<string | null>(null)
   const [activeId, setActiveId] = useState<string | null>(sessions[0]?.id ?? null)
   const [running, setRunning] = useState(false)
   const [speed, setSpeed] = useState(1)
@@ -48,18 +48,24 @@ export default function App() {
   const [briefOpen, setBriefOpen] = useState(false)
   const [openPaperId, setOpenPaperId] = useState<string | null>(null)
   const [pending, setPending] = useState<{ paperId: string; crew: CrewId } | null>(null)
+  const [revisionError, setRevisionError] = useState<string | null>(null)
   const [flash, setFlash] = useState<{ crew: CrewId; text: string } | null>(null)
+  const [idleScene, setIdleScene] = useState<ChatterScene>(() => BICKER_SCENES[0])
   const [idleIndex, setIdleIndex] = useState(0)
   const [idleClock, setIdleClock] = useState(0)
-  const [view, setView] = useState<'party' | 'boardroom' | 'lair'>('party')
+  const [view, setView] = useState<'party' | 'boardroom' | 'vault' | 'lair'>('party')
   const [lairCrew, setLairCrew] = useState<CrewId | null>(null)
   const [veil, setVeil] = useState(false)
   const [loadouts, setLoadouts] = useState<LoadoutBook>(() => loadBook())
+  const [llm, setLlm] = useState<LlmConfig>(() => loadLlmConfig())
+  const [settingsOpen, setSettingsOpen] = useState(false)
+  const [live, setLive] = useState<LiveRunView | null>(null)
 
   const wasRunning = useRef(false)
   const flashTimer = useRef<number | null>(null)
   const revisionTimer = useRef<number | null>(null)
   const veilTimer = useRef<number | null>(null)
+  const liveAbort = useRef<AbortController | null>(null)
   const returnView = useRef<'party' | 'boardroom'>('party')
 
   const active = sessions.find((session) => session.id === activeId) ?? null
@@ -130,23 +136,53 @@ export default function App() {
     return () => window.removeEventListener('pagehide', flush)
   }, [])
 
-  /* lobby chatter: one line types all the way through, holds, then swaps */
-  const idleLine = IDLE_LINES[idleIndex % IDLE_LINES.length]
+  /* the vault is local-first too: packages survive a reload in this browser */
+  const deliverablesRef = useRef(deliverables)
+  deliverablesRef.current = deliverables
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => saveDeliverables(deliverablesRef.current), 900)
+    return () => window.clearTimeout(timer)
+  }, [deliverables])
+
+  useEffect(() => {
+    const flush = () => saveDeliverables(deliverablesRef.current)
+    window.addEventListener('pagehide', flush)
+    return () => window.removeEventListener('pagehide', flush)
+  }, [])
+
+  /* boardroom chatter: the crew are always mid-argument when the user walks in */
+  const idleLine = idleScene.lines[idleIndex % idleScene.lines.length]
   const idleTypeMs = idleLine.text.length * IDLE_CHAR_MS
   const idleChars = Math.min(idleLine.text.length, Math.floor(idleClock / IDLE_CHAR_MS))
 
   useEffect(() => {
-    if (meeting) return
-    const id = window.setInterval(() => setIdleClock((ms) => ms + CLOCK_TICK), CLOCK_TICK)
-    return () => window.clearInterval(id)
-  }, [meeting])
+    if (view !== 'boardroom' || meeting) return
+    const scene = pickBickerScene()
+    /* start a line or two in: never the opening line, never the last one */
+    const start = 1 + Math.floor(Math.random() * (scene.lines.length - 2))
+    setIdleScene(scene)
+    setIdleIndex(start)
+    setIdleClock(0)
+  }, [view, meeting])
 
   useEffect(() => {
-    if (meeting) return
+    if (meeting || view !== 'boardroom') return
+    const id = window.setInterval(() => setIdleClock((ms) => ms + CLOCK_TICK), CLOCK_TICK)
+    return () => window.clearInterval(id)
+  }, [meeting, view])
+
+  useEffect(() => {
+    if (meeting || view !== 'boardroom') return
     if (idleClock < idleTypeMs + IDLE_HOLD_MS) return
-    setIdleIndex((index) => index + 1)
+    if (idleIndex + 1 < idleScene.lines.length) {
+      setIdleIndex((index) => index + 1)
+    } else {
+      setIdleScene(pickBickerScene(idleScene.id))
+      setIdleIndex(0)
+    }
     setIdleClock(0)
-  }, [idleClock, idleTypeMs, meeting])
+  }, [idleClock, idleTypeMs, meeting, view, idleIndex, idleScene])
 
   useEffect(() => {
     const timer = window.setTimeout(() => saveBook(loadouts), 400)
@@ -158,6 +194,7 @@ export default function App() {
       if (flashTimer.current) window.clearTimeout(flashTimer.current)
       if (revisionTimer.current) window.clearTimeout(revisionTimer.current)
       if (veilTimer.current) window.clearTimeout(veilTimer.current)
+      liveAbort.current?.abort()
     }
   }, [])
 
@@ -193,6 +230,46 @@ export default function App() {
   }
 
   const showBoardroom = () => setView('boardroom')
+  const showVault = () => setView('vault')
+
+  const updateDeliverable = (next: Deliverable) => {
+    setDeliverables((prev) => prev.map((deliverable) => (deliverable.id === next.id ? next : deliverable)))
+  }
+
+  const removeDeliverable = (id: string) => {
+    setDeliverables((prev) => prev.filter((deliverable) => deliverable.id !== id))
+    if (activeDeliverableId === id) setActiveDeliverableId(null)
+  }
+
+  const importDeliverable = (incoming: Deliverable): ImportOutcome => {
+    if (deliverables.length >= MAX_DELIVERABLES) {
+      return {
+        ok: false,
+        message: `The vault is full (${MAX_DELIVERABLES} packages). Remove a package before importing.`,
+      }
+    }
+
+    /* Keep both packages if an engine re-files the same ID instead of silently
+       replacing the copy already under review. */
+    const duplicate = deliverables.some((deliverable) => deliverable.id === incoming.id)
+    const id = duplicate
+      ? `${incoming.id}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 5)}`
+      : incoming.id
+    const filed = { ...incoming, id }
+    const next = [filed, ...deliverables].slice(0, MAX_DELIVERABLES)
+
+    setDeliverables(next)
+    setActiveDeliverableId(id)
+    const stored = saveDeliverables(next)
+    return {
+      ok: true,
+      message: stored
+        ? duplicate
+          ? `Filed an additional copy of “${filed.title}”.`
+          : `Filed “${filed.title}” in the vault.`
+        : `Filed “${filed.title}” for this session only — browser storage is full. Export it before reloading.`,
+    }
+  }
 
   /* a screen change always starts at the top, never halfway down the last one */
   useEffect(() => {
@@ -257,7 +334,7 @@ export default function App() {
         const tag = target.tagName
         if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || target.isContentEditable) return
       }
-      if (view !== 'boardroom' || !meeting || done || briefOpen || openPaperId) return
+      if (view !== 'boardroom' || !meeting || done || briefOpen || openPaperId || settingsOpen || live) return
       event.preventDefault()
       advance()
     }
@@ -273,22 +350,12 @@ export default function App() {
     advance()
   }
 
-  const startBrief = (text: string) => {
-    const brief = parseBrief(text)
-    const nextMeeting = buildMeeting(brief)
+  const launchSession = (session: Session) => {
     if (revisionTimer.current) window.clearTimeout(revisionTimer.current)
     if (flashTimer.current) window.clearTimeout(flashTimer.current)
-    const now = Date.now()
-    const session: Session = {
-      id: newSessionId(),
-      title: brief.clean,
-      createdAt: now,
-      updatedAt: now,
-      meeting: nextMeeting,
-      papers: buildPapers(brief, readyTimes(nextMeeting)),
-      clock: 0,
-      complete: false,
-    }
+    /* the cap drops the oldest run: take its files out of IndexedDB with it */
+    const dropped = [session, ...sessionsRef.current].slice(MAX_SESSIONS)
+    if (dropped.length) void removeAttachments(dropped.flatMap((item) => item.attachments))
     setSessions((prev) => [session, ...prev].slice(0, MAX_SESSIONS))
     /* the new run starts with the loadout currently on the board, so the
        tools armed before the brief are the tools the meeting uses */
@@ -305,6 +372,131 @@ export default function App() {
     wasRunning.current = false
   }
 
+  const startSimulation = (brief: Brief, attachments: Attachment[]) => {
+    const nextMeeting = buildMeeting(brief)
+    const now = Date.now()
+    launchSession({
+      id: newSessionId(),
+      title: brief.clean,
+      attachments,
+      createdAt: now,
+      updatedAt: now,
+      meeting: nextMeeting,
+      papers: buildPapers(brief, readyTimes(nextMeeting)),
+      mode: 'sim',
+      clock: 0,
+      complete: false,
+    })
+  }
+
+  const startLive = async (brief: Brief, attachments: Attachment[], contexts: AttachmentContext[]) => {
+    const controller = new AbortController()
+    liveAbort.current?.abort()
+    liveAbort.current = controller
+    setBriefOpen(false)
+    setLive({
+      brief,
+      attachments,
+      contexts,
+      statuses: LIVE_WORKFLOW.map(() => 'waiting'),
+      lines: LIVE_WORKFLOW.map(() => ''),
+      active: 0,
+      error: null,
+      notice: null,
+      model: llm.model,
+    })
+
+    try {
+      const enabled = Object.fromEntries(
+        CREW.map((member) => [member.id, sessionTools(member.id)]),
+      ) as Record<CrewId, string[]>
+      const outputs = await runLiveCrew({
+        config: llm,
+        brief,
+        enabled,
+        signal: controller.signal,
+        onProgress: (index, status, line) => {
+          setLive((prev) => {
+            if (!prev) return prev
+            const statuses = prev.statuses.slice()
+            statuses[index] = status
+            const lines = prev.lines.slice()
+            if (line) lines[index] = line
+            return { ...prev, statuses, lines, active: status === 'running' ? index : prev.active }
+          })
+        },
+        onNotice: (notice) => {
+          setLive((prev) => (prev ? { ...prev, notice } : prev))
+        },
+      })
+      if (controller.signal.aborted) return
+      const { meeting: liveMeeting, papers: livePapers } = buildLiveRun(brief, outputs, llm.model)
+      const now = Date.now()
+      launchSession({
+        id: newSessionId(),
+        title: brief.clean,
+        attachments,
+        createdAt: now,
+        updatedAt: now,
+        meeting: liveMeeting,
+        papers: livePapers,
+        mode: 'live',
+        clock: 0,
+        complete: false,
+      })
+      setLive(null)
+    } catch (error) {
+      if (controller.signal.aborted) {
+        setLive(null)
+        void removeAttachments(attachments)
+        return
+      }
+      setLive((prev) =>
+        prev
+          ? {
+              ...prev,
+              error: error instanceof Error ? error.message : 'The live run failed before filing a paper.',
+              notice: null,
+            }
+          : prev,
+      )
+    } finally {
+      if (liveAbort.current === controller) liveAbort.current = null
+    }
+  }
+
+  const startBrief = async (text: string, files: File[]) => {
+    /* check before storing the files, so a missing key leaves the staged
+       brief and its attachments untouched behind the settings modal */
+    if (llm.enabled && !isLiveReady(llm)) {
+      setSettingsOpen(true)
+      return
+    }
+    const { attachments, contexts } = await attachFiles(files)
+    const brief = parseBrief(text, contexts)
+    if (llm.enabled) {
+      await startLive(brief, attachments, contexts)
+      return
+    }
+    startSimulation(brief, attachments)
+  }
+
+  const cancelLive = () => {
+    liveAbort.current?.abort()
+    if (live) void removeAttachments(live.attachments)
+    setLive(null)
+  }
+
+  const retryLive = () => {
+    if (!live) return
+    /* the key may have been cleared, or live mode switched off, while fixing it */
+    if (!isLiveReady(llm)) {
+      setSettingsOpen(true)
+      return
+    }
+    void startLive(live.brief, live.attachments, live.contexts)
+  }
+
   const openSession = (id: string) => {
     if (id === activeId) {
       setView('boardroom')
@@ -319,7 +511,17 @@ export default function App() {
     wasRunning.current = false
   }
 
+  const openAttachment = async (attachment: Attachment) => {
+    const blob = await loadAttachment(attachment)
+    if (!blob) return
+    const url = URL.createObjectURL(blob)
+    window.open(url, '_blank', 'noopener,noreferrer')
+    window.setTimeout(() => URL.revokeObjectURL(url), 60_000)
+  }
+
   const removeSession = (id: string) => {
+    const removed = sessions.find((session) => session.id === id)
+    if (removed?.attachments.length) void removeAttachments(removed.attachments)
     const rest = sessions.filter((session) => session.id !== id)
     setSessions(rest)
     if (id === activeId) {
@@ -334,11 +536,13 @@ export default function App() {
   const openPaperById = (id: string) => {
     wasRunning.current = running
     setRunning(false)
+    setRevisionError(null)
     setOpenPaperId(id)
   }
 
   const closePaper = () => {
     setOpenPaperId(null)
+    setRevisionError(null)
     if (wasRunning.current && meeting && clock < meeting.total) setRunning(true)
     wasRunning.current = false
   }
@@ -347,6 +551,49 @@ export default function App() {
     const paper = papers.find((item) => item.id === openPaperId)
     if (!paper || !meeting) return
     const nextVersion = paper.version + 1
+    if (active?.mode === 'live') {
+      if (!isLiveReady(llm)) {
+        const message = 'A live revision needs an API key. Open LIVE AI settings, add one, then send again.'
+        setRevisionError(message)
+        showFlash(crew, message)
+        return
+      }
+      setRevisionError(null)
+      setPending({ paperId: paper.id, crew })
+      reviseLivePaper({
+        config: llm,
+        brief: meeting.brief,
+        paper,
+        reviser: crew,
+        instruction,
+        enabled: sessionTools(crew),
+      })
+        .then((revised) => {
+          setSessions((prev) =>
+            prev.map((session) =>
+              session.id === activeId
+                ? {
+                    ...session,
+                    updatedAt: Date.now(),
+                    papers: session.papers.map((item) => (item.id === paper.id ? revised : item)),
+                  }
+                : session,
+            ),
+          )
+          showFlash(
+            crew,
+            `${CREW_BY_ID[crew].name} revised the ${paper.kind.toLowerCase()} → v${nextVersion}. It's back on the table.`,
+          )
+        })
+        .catch((error) => {
+          const message = `Live revision failed: ${error instanceof Error ? error.message : 'unknown error'}`
+          setRevisionError(message)
+          showFlash(crew, message)
+        })
+        .finally(() => setPending(null))
+      return
+    }
+    setRevisionError(null)
     setPending({ paperId: paper.id, crew })
     if (revisionTimer.current) window.clearTimeout(revisionTimer.current)
     revisionTimer.current = window.setTimeout(() => {
@@ -393,7 +640,7 @@ export default function App() {
         <nav className="rpg-tabs" aria-label="Screens">
           <button
             type="button"
-            className={`rpg-tab ${view !== 'boardroom' ? 'rpg-tab-on' : ''}`}
+            className={`rpg-tab ${view === 'party' || view === 'lair' ? 'rpg-tab-on' : ''}`}
             onClick={showParty}
           >
             PARTY
@@ -406,9 +653,31 @@ export default function App() {
             BOARDROOM
             {meeting && !done && <i className="rpg-tab-dot" aria-hidden="true" />}
           </button>
+          <button
+            type="button"
+            className={`rpg-tab ${view === 'vault' ? 'rpg-tab-on' : ''}`}
+            onClick={showVault}
+            title="Review finished deliverables and export packages"
+          >
+            VAULT
+            {deliverables.length > 0 && <i className="rpg-tab-num">{deliverables.length}</i>}
+          </button>
         </nav>
 
         <div className="hud-actions">
+          <button
+            type="button"
+            className={`btn btn-ghost llm-pill ${llm.enabled ? 'llm-pill-on' : ''}`}
+            onClick={() => setSettingsOpen(true)}
+            title={
+              llm.enabled
+                ? `Live mode: ${llm.model}. Open settings to change the endpoint or key.`
+                : 'Local simulation. Open settings to connect a live model.'
+            }
+          >
+            <i className={`llm-dot ${isLiveReady(llm) ? 'on' : ''}`} aria-hidden="true" />
+            {llm.enabled ? 'LIVE AI' : 'SIM'}
+          </button>
           {view === 'boardroom' && (
             <button
               type="button"
@@ -481,6 +750,17 @@ export default function App() {
         />
       )}
 
+      {view === 'vault' && (
+        <DeliverablesVault
+          deliverables={deliverables}
+          activeId={activeDeliverableId}
+          onSelect={setActiveDeliverableId}
+          onUpdate={updateDeliverable}
+          onDelete={removeDeliverable}
+          onImport={importDeliverable}
+        />
+      )}
+
       {view === 'boardroom' && (
       <div className={`workbench ${railOpen ? '' : 'workbench-solo'}`}>
         {railOpen && (
@@ -503,7 +783,7 @@ export default function App() {
                 onClick={() => openLair(member.id)}
                 title={`Open ${member.name}'s room · ${member.agent}`}
               >
-                <PixelSprite crew={member.id} size={30} />
+                <PixelSprite crew={member.id} size={member.id === 'chip' ? 24 : 30} />
                 <span>{member.short}</span>
               </button>
             ))}
@@ -538,6 +818,27 @@ export default function App() {
             )}
           </div>
 
+          {active?.attachments && active.attachments.length > 0 && (
+            <div className="attach-tray" aria-label="Files attached to this brief">
+              <span className="attach-tray-label">REFERENCE</span>
+              {active.attachments.map((attachment) => (
+                <button
+                  type="button"
+                  key={attachment.id}
+                  className="attach-tray-chip"
+                  onClick={() => void openAttachment(attachment)}
+                  title={`Open ${attachment.name}`}
+                >
+                  <span className="attach-badge" aria-hidden="true">
+                    {fileBadge(attachment.name, attachment.type)}
+                  </span>
+                  <span className="attach-tray-name">{attachment.name}</span>
+                  <span className="attach-tray-size">{formatBytes(attachment.size)}</span>
+                </button>
+              ))}
+            </div>
+          )}
+
           <div className="stage-shell" onPointerDown={stepFromTap}>
             <Stage
               meeting={meeting}
@@ -561,18 +862,47 @@ export default function App() {
             ? 'CLICK A CREW CARD TO ENTER THEIR ROOM · BOARDROOM FOR THE LIVE MEETING'
             : view === 'lair'
               ? 'TOGGLE ABILITIES TO SET THIS SESSION\u2019S LOADOUT · ESC RETURNS TO THE PARTY'
-              : meeting && !done
-                ? 'ANY KEY OR TAP TO LET THE CREW CONTINUE · CLICK THE WHITEBOARD TO REBRIEF · CLICK A PAPER TO INSPECT'
-                : 'CLICK THE WHITEBOARD TO BRIEF · CLICK A PAPER TO INSPECT OR REVISE'}
+              : view === 'vault'
+                ? 'REVIEW THE PACKAGE · RUN CHECKS · EXPORT THE ZIP · THE VAULT LIVES IN THIS BROWSER'
+                : meeting && !done
+                  ? 'ANY KEY OR TAP TO LET THE CREW CONTINUE · CLICK THE WHITEBOARD TO REBRIEF · CLICK A PAPER TO INSPECT'
+                  : 'CLICK THE WHITEBOARD TO BRIEF · CLICK A PAPER TO INSPECT OR REVISE'}
         </span>
-        <span className="hint-dim">LOCAL SIMULATION · NO KEYS, NO NETWORK</span>
+        <span className="hint-dim">
+          {view === 'vault'
+            ? 'LOCAL VAULT · PACKAGES STORED IN THIS BROWSER'
+            : llm.enabled
+              ? `LIVE AI · ${llm.model} · KEY IN THIS BROWSER`
+              : 'LOCAL SIMULATION · NO KEYS, NO NETWORK'}
+        </span>
       </footer>
 
       {briefOpen && (
         <BriefModal
           initial={meeting?.brief.clean ?? ''}
+          modeLabel={llm.enabled ? `LIVE AI · ${llm.model}` : 'LOCAL SIMULATION'}
           onClose={() => setBriefOpen(false)}
           onStart={startBrief}
+        />
+      )}
+
+      {settingsOpen && (
+        <LlmSettings
+          config={llm}
+          onSave={(next) => {
+            setLlm(next)
+            saveLlmConfig(next)
+          }}
+          onClose={() => setSettingsOpen(false)}
+        />
+      )}
+
+      {live && (
+        <LiveRunOverlay
+          run={live}
+          onCancel={cancelLive}
+          onRetry={retryLive}
+          onSettings={() => setSettingsOpen(true)}
         />
       )}
 
@@ -580,6 +910,7 @@ export default function App() {
         <DocPanel
           paper={openPaper}
           pending={pending && pending.paperId === openPaper.id ? pending : null}
+          error={revisionError}
           onClose={closePaper}
           onRequest={requestRevision}
         />

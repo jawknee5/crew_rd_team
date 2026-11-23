@@ -6,6 +6,9 @@ import { PixelSprite } from './PixelSprite'
 import { DaveBongRitual, DeanBenchGag } from './showScenes'
 import { LAIRS, LairArt, LairIcon } from './lairs'
 
+const TYPE_MS = 54
+const HOLD_MS = 6500
+
 interface LairScreenProps {
   crew: CrewId
   enabled: string[]
@@ -49,14 +52,14 @@ export function LairScreen({ crew, enabled, sessionTitle, onToggle, onDefaults, 
         }
         return count + 1
       })
-    }, 28)
+    }, TYPE_MS)
     return () => window.clearInterval(step)
   }, [lineIndex, crew, spec.lines])
 
   useEffect(() => {
     const text = spec.lines[lineIndex % spec.lines.length]
     if (chars < text.length) return
-    const hold = window.setTimeout(() => setLineIndex((index) => (index + 1) % spec.lines.length), 3400)
+    const hold = window.setTimeout(() => setLineIndex((index) => (index + 1) % spec.lines.length), HOLD_MS)
     return () => window.clearTimeout(hold)
   }, [chars, lineIndex, crew, spec.lines])
 
@@ -161,24 +164,27 @@ export function LairScreen({ crew, enabled, sessionTitle, onToggle, onDefaults, 
           {deanBench && <DeanBenchGag key={`dean-bench-${actionIndex}`} />}
 
           <div
-            className={`lair-actor pose-${action.pose} ${walking ? 'walking' : ''} ${daveBong ? 'dave-hit' : ''}`}
+            className={`lair-actor pose-${action.pose} ${walking ? 'walking' : ''} ${
+              daveBong ? 'dave-hit' : ''
+            } ${crew === 'chip' ? 'lair-actor-small' : ''}`}
             style={{ left: `${action.x}%` }}
           >
             <PixelSprite crew={crew} size={68} talk={mouthOpen || daveHit} />
-          </div>
 
-          {acting && !daveBong && !deanBench && (
-            <div
-              key={`${actionIndex}-${action.caption}`}
-              className={`lair-bubble pose-${action.pose}`}
-              style={{ left: `${Math.min(74, Math.max(26, action.x))}%` }}
-              role="img"
-              aria-label={action.caption}
-              title={action.caption}
-            >
-              <LairIcon name={action.icon} size={48} />
-            </div>
-          )}
+            {/* the bubble is a child of the actor, so it can never drift away
+                from the head or land in front of the face */}
+            {acting && !daveBong && !deanBench && (
+              <div
+                key={actionIndex}
+                className="lair-bubble"
+                role="img"
+                aria-label={action.caption}
+                title={action.caption}
+              >
+                <LairIcon name={action.icon} size={22} />
+              </div>
+            )}
+          </div>
         </div>
 
         <div className="lair-dialogue">

@@ -10,7 +10,7 @@ interface BeatSpec {
 }
 
 const THINK_MS = 620
-const CHAR_MS = 22
+const CHAR_MS = 40
 const HOLD_MS = 1600
 
 /**
@@ -22,6 +22,7 @@ const HOLD_MS = 1600
 export function buildMeeting(brief: Brief): Meeting {
   const rand = mulberry32(hashString(brief.clean))
   const kw = (i: number) => brief.keywords[i % brief.keywords.length] ?? 'the problem'
+  const files = brief.attachments
   const specs: BeatSpec[] = []
 
   /* analyzer frames the room */
@@ -34,6 +35,17 @@ export function buildMeeting(brief: Brief): Meeting {
       `Topic's on the board: ${brief.subject}. ${brief.modeLine} No wandering, no vibes. Sable, go.`,
     ]),
   })
+
+  /* attached files are primary reference, not decoration */
+  if (files.length) {
+    const names = files.map((file) => file.name)
+    const list = names.length === 1 ? names[0] : `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}`
+    specs.push({
+      crew: 'sable',
+      phase: 'CONTEXT',
+      text: `${list} ${files.length === 1 ? 'is' : 'are'} attached to the brief. Reference only — “${brief.subject}” is still the job, and the files are read alongside it.`,
+    })
+  }
 
   /* researcher */
   specs.push({
@@ -129,6 +141,20 @@ export function buildMeeting(brief: Brief): Meeting {
       `Done. If it can't run twice in a row without cleanup, it isn't done — so I wrote it that way.`,
     ]),
   })
+
+  /* a readable attachment is the baseline the build extends */
+  const script = files.find((file) => file.kind === 'text' || file.kind === 'data')
+  if (script) {
+    const detail = script.lines ? ` end to end — ${script.lines} lines` : ''
+    const index = specs.findIndex((spec) => spec.crew === 'milo' && spec.phase === 'BUILD')
+    const context: BeatSpec = {
+      crew: 'milo',
+      phase: 'CONTEXT',
+      text: `Read ${script.name}${detail} before changing anything. It is reference for this job; the brief still decides what we build, and the build keeps what works in the draft.`,
+    }
+    if (index >= 0) specs.splice(index, 0, context)
+    else specs.push(context)
+  }
 
   /* QA */
   specs.push({

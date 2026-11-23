@@ -137,10 +137,10 @@ export function Stage({ meeting, clock, papers, flash, idleLine, idleChars, onBo
         />
       ) : (
         <div className="stage-ticker" aria-hidden="true">
-          <span className="ticker-badge">GAMEAVISION</span>
+          <span className="ticker-badge">CREW R&amp;D</span>
           <span className="ticker-center">
             <span className="ticker-kicker">CREW R&amp;D · SUNNYVALE · 1983</span>
-            <span className="ticker-title">CODE MONKEYS</span>
+            <span className="ticker-title">BRIEFING ROOM</span>
           </span>
           <span className="ticker-count">
             {papers.length} CREW · {ready.length} PAPERS
