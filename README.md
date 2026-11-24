@@ -1,6 +1,41 @@
 # crew_rd_team
 A fully equipped research and development team armed with the tools for scripting extensively deep research and unorthodox workarounds to tackle any job scope question or case and provide a multitude of dynamic solutions
 
+## Local setup (Windows)
+
+Install **Node.js LTS** from [nodejs.org](https://nodejs.org/en/download), keeping **Add to PATH** checked. Close and reopen Command Prompt, then verify:
+
+```bat
+node -v
+npm -v
+```
+
+If `npm` is still not recognized, add `C:\Program Files\nodejs` to your user `PATH` and reopen the terminal. Run `npm` directly, not `bash npm`.
+
+From the project folder:
+
+```bat
+npm install
+npm run dev
+```
+
+Open <http://localhost:3000>. To build and launch the desktop app:
+
+```bat
+npm run desktop
+```
+
+### Ollama preset
+
+Install [Ollama for Windows](https://ollama.com/download), then pull the model once and keep Ollama running (or run `ollama serve`):
+
+```bat
+ollama pull llama3.2
+ollama list
+```
+
+In the app, open **SIM / LIVE AI** → **OLLAMA · LOCAL** → **FIND MODELS** → select `llama3.2:latest` → **TEST CONNECTION** → **SAVE SETTINGS**, then turn **LIVE MODE ON**. No API key is needed; the preset uses `http://127.0.0.1:11434/v1`. Start the app locally — a hosted or cloud preview cannot reach Ollama on your PC.
+
 ## Android release signing
 
 Tagged builds (`v*`) sign the APK with a release keystore supplied through repository secrets. Branch builds still produce a debug APK.
